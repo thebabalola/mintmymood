@@ -20,6 +20,13 @@ export default function NFTGallery() {
   const contractAddress = process.env
     .NEXT_PUBLIC_CONTRACT_ADDRESS as `0x${string}`;
 
+  // Badge URIs to filter out
+  const BADGE_URIS = [
+    "https://chocolate-electrical-wasp-990.mypinata.cloud/ipfs/bafybeifjwou3dmsxoli3ggm6vg55ex44zae367x6am6ncvmkcz2c6pogki/0-First-Mint-Badge.json",
+    "https://chocolate-electrical-wasp-990.mypinata.cloud/ipfs/bafybeifjwou3dmsxoli3ggm6vg55ex44zae367x6am6ncvmkcz2c6pogki/1-Mood-Maestro-Badge.json",
+    "https://chocolate-electrical-wasp-990.mypinata.cloud/ipfs/bafybeifjwou3dmsxoli3ggm6vg55ex44zae367x6am6ncvmkcz2c6pogki/2-The-Streaker-Achievement-Badge.json",
+  ];
+
   // Fetch total supply
   const { data: mintCount, isLoading: mintCountLoading } = useReadContract({
     address: contractAddress,
@@ -56,15 +63,19 @@ export default function NFTGallery() {
                 `Fetching metadata for token ${tokenId} from URI: ${uri}`
               );
 
+              // Skip if this is a badge URI
+              if (BADGE_URIS.includes(uri)) {
+                console.log(`Skipping badge token ${tokenId}`);
+                continue;
+              }
+
               let metadata: NFTMetadata;
 
               // Check if it's a data URI (for badges) or IPFS URI (for regular moods)
               if (uri.startsWith("data:application/json;base64,")) {
-                // Handle base64-encoded badge metadata
-                const base64Data = uri.split(",")[1];
-                const jsonString = atob(base64Data);
-                metadata = JSON.parse(jsonString);
-                console.log(`Badge metadata for token ${tokenId}:`, metadata);
+                // Handle base64-encoded badge metadata - skip these
+                console.log(`Skipping base64 badge token ${tokenId}`);
+                continue;
               } else {
                 // Handle IPFS metadata for regular mood NFTs
                 const httpUri = uri.replace("ipfs://", "https://ipfs.io/ipfs/");

@@ -1,11 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useReadContract, useAccount } from "wagmi";
+import {
+  useReadContract,
+  useAccount,
+  useWriteContract,
+  useWaitForTransactionReceipt,
+} from "wagmi";
 import { MintMyMoodABI } from "../lib/MintMyMoodABI";
-
-// NOTE: We are removing the write hooks for now to isolate and fix the read loop.
-// We can add them back after the display logic is stable.
 
 interface Badge {
   id: string;
@@ -13,6 +15,7 @@ interface Badge {
   description: string;
   image: string;
   earned: boolean;
+  isEligible: boolean;
   progress?: {
     current: number;
     required: number;
@@ -36,33 +39,122 @@ export default function UserBadges() {
   const contractAddress = process.env
     .NEXT_PUBLIC_CONTRACT_ADDRESS as `0x${string}`;
 
-  // Read contract data for badge tracking
-  const { data: hasFirstMintBadge } = useReadContract({
-    address: contractAddress,
-    abi: MintMyMoodABI,
-    functionName: "hasFirstMintBadge",
-    args: address ? [address] : undefined,
+  // Write hooks for each badge mint function
+  const {
+    writeContract: mintFirstBadge,
+    data: firstMintHash,
+    isPending: isFirstMinting,
+  } = useWriteContract();
+  const { isSuccess: isFirstMinted } = useWaitForTransactionReceipt({
+    hash: firstMintHash,
   });
 
-  const { data: hasStreakBadge } = useReadContract({
+  const {
+    writeContract: mintStreakBadge,
+    data: streakHash,
+    isPending: isStreakMinting,
+  } = useWriteContract();
+  const { isSuccess: isStreakMinted } = useWaitForTransactionReceipt({
+    hash: streakHash,
+  });
+
+  const {
+    writeContract: mintMoodMaestroBadge,
+    data: maestroHash,
+    isPending: isMaestroMinting,
+  } = useWriteContract();
+  const { isSuccess: isMaestroMinted } = useWaitForTransactionReceipt({
+    hash: maestroHash,
+  });
+
+  // Helper function to call the correct mint function based on badge ID
+  const handleClaimBadge = async (badgeId: string) => {
+    if (!address) {
+      console.error("No wallet connected");
+      return;
+    }
+
+    const mintConfig = {
+      abi: MintMyMoodABI,
+      address: contractAddress,
+    };
+
+    try {
+      switch (badgeId) {
+        case "first-mint":
+          console.log("Minting first badge...");
+          await mintFirstBadge({
+            ...mintConfig,
+            functionName: "mintFirstMintBadge",
+          });
+          break;
+        case "streak":
+          console.log("Minting streak badge...");
+          await mintStreakBadge({
+            ...mintConfig,
+            functionName: "mintStreakBadge",
+          });
+          break;
+        case "mood-maestro":
+          console.log("Minting mood maestro badge...");
+          await mintMoodMaestroBadge({
+            ...mintConfig,
+            functionName: "mintMoodMaestroBadge",
+          });
+          break;
+        default:
+          console.error("Unknown badge ID:", badgeId);
+      }
+    } catch (error) {
+      console.error("Error claiming badge:", error);
+    }
+  };
+
+  // Fixed read hooks with proper refetch capability
+  const { data: hasFirstMintBadge, refetch: refetchFirstMint } =
+    useReadContract({
+      address: contractAddress,
+      abi: MintMyMoodABI,
+      functionName: "hasFirstMintBadge",
+      args: address ? [address] : undefined,
+      query: {
+        enabled: Boolean(address),
+        refetchOnWindowFocus: false,
+      },
+    });
+
+  const { data: hasStreakBadge, refetch: refetchStreak } = useReadContract({
     address: contractAddress,
     abi: MintMyMoodABI,
     functionName: "hasStreakBadge",
     args: address ? [address] : undefined,
+    query: {
+      enabled: Boolean(address),
+      refetchOnWindowFocus: false,
+    },
   });
 
-  const { data: hasMoodMaestroBadge } = useReadContract({
-    address: contractAddress,
-    abi: MintMyMoodABI,
-    functionName: "hasMoodMaestroBadge",
-    args: address ? [address] : undefined,
-  });
+  const { data: hasMoodMaestroBadge, refetch: refetchMaestro } =
+    useReadContract({
+      address: contractAddress,
+      abi: MintMyMoodABI,
+      functionName: "hasMoodMaestroBadge",
+      args: address ? [address] : undefined,
+      query: {
+        enabled: Boolean(address),
+        refetchOnWindowFocus: false,
+      },
+    });
 
   const { data: userMintCount } = useReadContract({
     address: contractAddress,
     abi: MintMyMoodABI,
     functionName: "getMintCount",
     args: address ? [address] : undefined,
+    query: {
+      enabled: Boolean(address),
+      refetchOnWindowFocus: false,
+    },
   });
 
   const { data: streakCount } = useReadContract({
@@ -70,89 +162,120 @@ export default function UserBadges() {
     abi: MintMyMoodABI,
     functionName: "streakCount",
     args: address ? [address] : undefined,
+    query: {
+      enabled: Boolean(address),
+      refetchOnWindowFocus: false,
+    },
   });
 
   const { data: streakMilestone } = useReadContract({
     address: contractAddress,
     abi: MintMyMoodABI,
     functionName: "streakMilestone",
+    query: {
+      refetchOnWindowFocus: false,
+    },
   });
 
   const { data: moodMaestroMilestone } = useReadContract({
     address: contractAddress,
     abi: MintMyMoodABI,
     functionName: "getMoodMaestroMilestone",
+    query: {
+      refetchOnWindowFocus: false,
+    },
   });
 
-  // Read badge URIs from contract
   const { data: firstMintBadgeURI } = useReadContract({
     address: contractAddress,
     abi: MintMyMoodABI,
     functionName: "firstMintBadgeURI",
+    query: {
+      refetchOnWindowFocus: false,
+    },
   });
 
   const { data: streakBadgeURI } = useReadContract({
     address: contractAddress,
     abi: MintMyMoodABI,
     functionName: "streakBadgeURI",
+    query: {
+      refetchOnWindowFocus: false,
+    },
   });
 
   const { data: moodMaestroBadgeURI } = useReadContract({
     address: contractAddress,
     abi: MintMyMoodABI,
     functionName: "moodMaestroBadgeURI",
+    query: {
+      refetchOnWindowFocus: false,
+    },
   });
 
-  // ✅ FIXED: This function now correctly converts IPFS URIs to HTTPS URLs.
+  // Refetch badge status when transactions are successful
+  useEffect(() => {
+    if (isFirstMinted) {
+      console.log("First badge minted successfully!");
+      refetchFirstMint();
+    }
+  }, [isFirstMinted, refetchFirstMint]);
+
+  useEffect(() => {
+    if (isStreakMinted) {
+      console.log("Streak badge minted successfully!");
+      refetchStreak();
+    }
+  }, [isStreakMinted, refetchStreak]);
+
+  useEffect(() => {
+    if (isMaestroMinted) {
+      console.log("Maestro badge minted successfully!");
+      refetchMaestro();
+    }
+  }, [isMaestroMinted, refetchMaestro]);
+
   const fetchBadgeMetadata = async (
     uri: string
   ): Promise<BadgeMetadata | null> => {
     if (!uri || uri.trim() === "") return null;
-
-    // Convert ipfs:// URI to an HTTP gateway URL
-    const httpUri = uri.startsWith("ipfs://")
-      ? uri.replace("ipfs://", "https://ipfs.io/ipfs/")
-      : uri;
-
     try {
-      const response = await fetch(httpUri);
-      if (!response.ok) {
-        console.error(
-          `Failed to fetch metadata from ${httpUri}: ${response.status}`
-        );
-        return null; // Return null on failure to prevent crashes
-      }
-      const metadata: BadgeMetadata = await response.json();
-      return metadata;
+      const response = await fetch(uri);
+      if (!response.ok) return null;
+      return await response.json();
     } catch (e) {
-      console.error(`Error fetching or parsing metadata from ${httpUri}:`, e);
-      return null; // Return null on any error
+      console.error(`Error fetching metadata from ${uri}:`, e);
+      return null;
     }
   };
 
   useEffect(() => {
     const loadBadges = async () => {
       if (!address) {
-        setBadges([]); // Clear badges if no user is connected
+        setBadges([]);
         setLoading(false);
         return;
       }
-
-      // Only show loader on initial load
-      // setLoading(true);
       setError("");
 
       try {
-        const badgePromises = [
-          fetchBadgeMetadata(firstMintBadgeURI as string),
-          fetchBadgeMetadata(streakBadgeURI as string),
-          fetchBadgeMetadata(moodMaestroBadgeURI as string),
-        ];
-
         const [firstMintMetadata, streakMetadata, maestroMetadata] =
-          await Promise.all(badgePromises);
+          await Promise.all([
+            fetchBadgeMetadata(firstMintBadgeURI as string),
+            fetchBadgeMetadata(streakBadgeURI as string),
+            fetchBadgeMetadata(moodMaestroBadgeURI as string),
+          ]);
 
         const badgeList: Badge[] = [];
+
+        // Define requirements
+        const firstMintRequired = 1;
+        const streakRequired = Number(streakMilestone || 7);
+        const maestroRequired = Number(moodMaestroMilestone || 50);
+
+        // Define current progress
+        const currentMints = Number(userMintCount || 0);
+        const currentStreak = Number(streakCount || 0);
 
         // First Mint Badge
         badgeList.push({
@@ -161,18 +284,17 @@ export default function UserBadges() {
           description:
             firstMintMetadata?.description ||
             "Awarded for your first mood mint!",
-          image: firstMintMetadata?.image
-            ? firstMintMetadata.image.replace(
-                "ipfs://",
-                "https://ipfs.io/ipfs/"
-              )
-            : "/placeholder-badge.svg",
+          image: firstMintMetadata?.image || "/placeholder-badge.svg",
           earned: Boolean(hasFirstMintBadge),
+          isEligible: currentMints >= firstMintRequired,
           progress: !hasFirstMintBadge
             ? {
-                current: Number(userMintCount || 0),
-                required: 1,
-                percentage: Number(userMintCount || 0) >= 1 ? 100 : 0,
+                current: currentMints,
+                required: firstMintRequired,
+                percentage: Math.min(
+                  100,
+                  (currentMints / firstMintRequired) * 100
+                ),
               }
             : undefined,
         });
@@ -180,26 +302,20 @@ export default function UserBadges() {
         // Streak Badge
         badgeList.push({
           id: "streak",
-          name:
-            streakMetadata?.name ||
-            `${Number(streakMilestone || 7)}-Day Streaker`,
+          name: streakMetadata?.name || `${streakRequired}-Day Streaker`,
           description:
             streakMetadata?.description ||
-            `Awarded for maintaining a ${Number(
-              streakMilestone || 7
-            )}-day streak!`,
-          image: streakMetadata?.image
-            ? streakMetadata.image.replace("ipfs://", "https://ipfs.io/ipfs/")
-            : "/placeholder-badge.svg",
+            `Awarded for maintaining a ${streakRequired}-day streak!`,
+          image: streakMetadata?.image || "/placeholder-badge.svg",
           earned: Boolean(hasStreakBadge),
+          isEligible: currentStreak >= streakRequired,
           progress: !hasStreakBadge
             ? {
-                current: Number(streakCount || 0),
-                required: Number(streakMilestone || 7),
+                current: currentStreak,
+                required: streakRequired,
                 percentage: Math.min(
                   100,
-                  (Number(streakCount || 0) / Number(streakMilestone || 7)) *
-                    100
+                  (currentStreak / streakRequired) * 100
                 ),
               }
             : undefined,
@@ -211,20 +327,17 @@ export default function UserBadges() {
           name: maestroMetadata?.name || "Mood Maestro",
           description:
             maestroMetadata?.description ||
-            `Awarded for minting ${Number(moodMaestroMilestone || 50)} moods!`,
-          image: maestroMetadata?.image
-            ? maestroMetadata.image.replace("ipfs://", "https://ipfs.io/ipfs/")
-            : "/placeholder-badge.svg",
+            `Awarded for minting ${maestroRequired} moods!`,
+          image: maestroMetadata?.image || "/placeholder-badge.svg",
           earned: Boolean(hasMoodMaestroBadge),
+          isEligible: currentMints >= maestroRequired,
           progress: !hasMoodMaestroBadge
             ? {
-                current: Number(userMintCount || 0),
-                required: Number(moodMaestroMilestone || 50),
+                current: currentMints,
+                required: maestroRequired,
                 percentage: Math.min(
                   100,
-                  (Number(userMintCount || 0) /
-                    Number(moodMaestroMilestone || 50)) *
-                    100
+                  (currentMints / maestroRequired) * 100
                 ),
               }
             : undefined,
@@ -235,7 +348,6 @@ export default function UserBadges() {
         const errorMessage =
           err instanceof Error ? err.message : "An unknown error occurred";
         setError(`Failed to load badges: ${errorMessage}`);
-        console.error("UserBadges error:", err);
       } finally {
         setLoading(false);
       }
@@ -254,6 +366,9 @@ export default function UserBadges() {
     firstMintBadgeURI,
     streakBadgeURI,
     moodMaestroBadgeURI,
+    isFirstMinted,
+    isStreakMinted,
+    isMaestroMinted,
   ]);
 
   if (!address) {
@@ -270,35 +385,11 @@ export default function UserBadges() {
   return (
     <div className="w-full max-w-4xl p-4">
       <h2 className="text-2xl font-bold text-purple-600 mb-4">Your Badges</h2>
-
       {loading && (
-        <div className="flex justify-center items-center py-8">
-          <svg
-            className="animate-spin h-5 w-5 mr-3 text-purple-600"
-            viewBox="0 0 24 24"
-          >
-            <circle
-              className="opacity-25"
-              cx="12"
-              cy="12"
-              r="10"
-              stroke="currentColor"
-              strokeWidth="4"
-            />
-            <path
-              className="opacity-75"
-              fill="currentColor"
-              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-            />
-          </svg>
-          <p>Loading your badges...</p>
-        </div>
+        <div className="text-center py-8">Loading your badges...</div>
       )}
-
       {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-          {error}
-        </div>
+        <div className="bg-red-100 text-red-700 p-3 rounded">{error}</div>
       )}
 
       {/* Earned Badges */}
@@ -308,7 +399,7 @@ export default function UserBadges() {
         </h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
           {badges
-            .filter((badge) => badge.earned)
+            .filter((b) => b.earned)
             .map((badge) => (
               <div
                 key={badge.id}
@@ -319,10 +410,6 @@ export default function UserBadges() {
                     src={badge.image}
                     alt={badge.name}
                     className="w-16 h-16 rounded-full mr-3 object-cover"
-                    onError={(e) => {
-                      e.currentTarget.src =
-                        "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHJ4PSIzMiIgZmlsbD0iI2ZmZGQwMCIvPjx0ZXh0IHg9IjMyIiB5PSI0MCIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjI0IiBmaWxsPSJ3aGl0ZSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+🏆PC90ZXh0Pjwvc3ZnPg==";
-                    }}
                   />
                   <div>
                     <h4 className="font-bold text-green-800">{badge.name}</h4>
@@ -333,8 +420,7 @@ export default function UserBadges() {
               </div>
             ))}
         </div>
-
-        {badges.filter((badge) => badge.earned).length === 0 && !loading && (
+        {badges.filter((b) => b.earned).length === 0 && !loading && (
           <p className="text-gray-500 italic">
             No badges earned yet. Start minting to earn your first badge!
           </p>
@@ -349,55 +435,71 @@ export default function UserBadges() {
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
           {badges
             .filter((badge) => !badge.earned)
-            .map((badge) => (
-              <div
-                key={badge.id}
-                className="bg-orange-50 border-2 border-orange-200 rounded-lg p-4 shadow-md"
-              >
-                <div className="flex items-center mb-2">
-                  <img
-                    src={badge.image}
-                    alt={badge.name}
-                    className="w-16 h-16 rounded-full mr-3 object-cover opacity-60"
-                    onError={(e) => {
-                      e.currentTarget.src =
-                        "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHJ4PSIzMiIgZmlsbD0iI2Y5NzMxNiIvPjx0ZXh0IHg9IjMyIiB5PSI0MCIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjI0IiBmaWxsPSJ3aGl0ZSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+🎯PC90ZXh0Pjwvc3ZnPg==";
-                    }}
-                  />
+            .map((badge) => {
+              const isMinting =
+                (badge.id === "first-mint" && isFirstMinting) ||
+                (badge.id === "streak" && isStreakMinting) ||
+                (badge.id === "mood-maestro" && isMaestroMinting);
+
+              return (
+                <div
+                  key={badge.id}
+                  className="bg-orange-50 border-2 border-orange-200 rounded-lg p-4 shadow-md flex flex-col justify-between"
+                >
                   <div>
-                    <h4 className="font-bold text-orange-800">{badge.name}</h4>
-                    <p className="text-sm text-orange-600">In Progress</p>
+                    <div className="flex items-center mb-2">
+                      <img
+                        src={badge.image}
+                        alt={badge.name}
+                        className="w-16 h-16 rounded-full mr-3 object-cover opacity-60"
+                      />
+                      <div>
+                        <h4 className="font-bold text-orange-800">
+                          {badge.name}
+                        </h4>
+                        <p className="text-sm text-orange-600">In Progress</p>
+                      </div>
+                    </div>
+                    <p className="text-sm text-gray-700 mb-3">
+                      {badge.description}
+                    </p>
+                    {badge.progress && (
+                      <div>
+                        <div className="flex justify-between text-sm mb-1">
+                          <span>Progress:</span>
+                          <span className="font-semibold">
+                            {badge.progress.current}/{badge.progress.required}
+                          </span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div
+                            className="bg-orange-500 h-2 rounded-full"
+                            style={{ width: `${badge.progress.percentage}%` }}
+                          ></div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Claim Button */}
+                  <div className="mt-4">
+                    {badge.isEligible && (
+                      <button
+                        onClick={() => handleClaimBadge(badge.id)}
+                        disabled={isMinting}
+                        className="w-full px-4 py-2 text-sm font-semibold text-white bg-green-600 rounded-md shadow-sm hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                      >
+                        {isMinting ? "Claiming..." : "Claim Badge"}
+                      </button>
+                    )}
                   </div>
                 </div>
-                <p className="text-sm text-gray-700 mb-3">
-                  {badge.description}
-                </p>
-
-                {badge.progress && (
-                  <div>
-                    <div className="flex justify-between text-sm mb-1">
-                      <span>Progress:</span>
-                      <span className="font-semibold">
-                        {badge.progress.current}/{badge.progress.required}
-                      </span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div
-                        className="bg-orange-500 h-2 rounded-full transition-all duration-300"
-                        style={{ width: `${badge.progress.percentage}%` }}
-                      ></div>
-                    </div>
-                    <p className="text-xs text-gray-600 mt-1">
-                      {badge.progress.percentage.toFixed(1)}% complete
-                    </p>
-                  </div>
-                )}
-              </div>
-            ))}
+              );
+            })}
         </div>
       </div>
 
-      {/* Summary Stats */}
+      {/* Stats Section */}
       <div className="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-4">
         <h3 className="text-lg font-semibold text-blue-800 mb-2">
           📊 Your Stats
