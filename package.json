@@ -9,16 +9,35 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "react": "19.1.0",
-    "react-dom": "19.1.0",
-    "next": "15.4.1"
+    "@google/generative-ai": "^0.24.1",
+    "@huggingface/inference": "^4.5.1",
+    "@tailwindcss/forms": "^0.5.10",
+    "@tanstack/react-query": "^5.83.0",
+    "@types/html2canvas": "^0.5.35",
+    "@wagmi/chains": "^1.8.0",
+    "axios": "^1.10.0",
+    "connectkit": "^1.9.1",
+    "dotenv": "^17.2.0",
+    "firebase": "^11.10.0",
+    "html2canvas": "^1.4.1",
+    "ipfs-http-client": "^60.0.1",
+    "next": "15.4.1",
+    "nft.storage": "^7.2.0",
+    "pinata": "^2.4.9",
+    "pino-pretty": "^13.0.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-hot-toast": "^2.5.2",
+    "together-ai": "^0.20.0",
+    "viem": "^2.31.7",
+    "wagmi": "^2.15.6"
   },
   "devDependencies": {
-    "typescript": "^5",
+    "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "@tailwindcss/postcss": "^4",
-    "tailwindcss": "^4"
+    "tailwindcss": "^4.1.11",
+    "typescript": "^5"
   }
 }
