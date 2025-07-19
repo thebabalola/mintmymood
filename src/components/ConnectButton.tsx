@@ -9,7 +9,7 @@ import {
   FaPowerOff,
   FaTimes,
   FaQuestionCircle,
-  FaSpinner, // Import spinner icon
+  FaSpinner,
 } from "react-icons/fa";
 import { FaComputerMouse, FaWallet } from "react-icons/fa6";
 
@@ -20,7 +20,6 @@ const shortenAddress = (address: string) => {
     address.length - 4
   )}`;
 };
-
 const WalletIcon = ({ connector }: { connector: any }) => {
   if (connector.icon) {
     return (
@@ -39,24 +38,20 @@ const WalletIcon = ({ connector }: { connector: any }) => {
 };
 
 export default function ConnectButton() {
+  // Your logic, hooks, and state remain completely unchanged
   const { address, isConnected, chain } = useAccount();
   const { connectors, connect, isPending } = useConnect();
   const { disconnect } = useDisconnect();
-
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
   const [isClient, setIsClient] = useState(false);
-
-  // THE FIX 1: State to track which specific connector is loading
   const [pendingConnectorId, setPendingConnectorId] = useState<string | null>(
     null
   );
-
   useEffect(() => {
     setIsClient(true);
   }, []);
-
   const handleCopy = () => {
     if (address) {
       navigator.clipboard.writeText(address);
@@ -64,7 +59,6 @@ export default function ConnectButton() {
       setTimeout(() => setCopySuccess(false), 2000);
     }
   };
-
   const handleConnect = (connector: any) => {
     setPendingConnectorId(connector.id);
     connect(
@@ -75,7 +69,6 @@ export default function ConnectButton() {
           setPendingConnectorId(null);
         },
         onError: () => {
-          // Keep modal open on error and stop loading indicator
           setPendingConnectorId(null);
         },
       }
@@ -83,7 +76,6 @@ export default function ConnectButton() {
   };
 
   if (!isConnected) {
-    // THE FIX 2: De-duplicate connectors based on their name
     const uniqueConnectors = Array.from(
       new Map(connectors.map((c) => [c.name, c])).values()
     );
@@ -106,12 +98,14 @@ export default function ConnectButton() {
         {isModalOpen &&
           isClient &&
           createPortal(
+            // THE FIX 1: Added padding `p-4` to the backdrop to ensure the modal never touches the screen edges.
             <div
-              className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-md"
+              className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-md p-4"
               onClick={() => setIsModalOpen(false)}
             >
               <div
-                className="w-full max-w-md rounded-2xl bg-[#F7F8FC] p-6 shadow-2xl"
+                // THE FIX 2: Made the internal padding responsive (`p-4` on mobile, `sm:p-6` on larger screens).
+                className="w-full max-w-md rounded-2xl bg-[#F7F8FC] p-4 sm:p-6 shadow-2xl"
                 onClick={(e) => e.stopPropagation()}
               >
                 <div className="flex items-center justify-between mb-6">
@@ -126,7 +120,8 @@ export default function ConnectButton() {
                   </button>
                 </div>
                 <div className="flex flex-col gap-4">
-                  <div className="grid grid-cols-3 gap-3">
+                  {/* THE FIX 3: Grid is now 2 columns on mobile, and 3 on medium screens and up. */}
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                     {otherConnectors.map((connector) => {
                       const isLoading =
                         isPending && pendingConnectorId === connector.id;
@@ -151,6 +146,7 @@ export default function ConnectButton() {
                   </div>
                   {walletConnectConnector &&
                     (() => {
+                      /* Unchanged */
                       const isLoading =
                         isPending &&
                         pendingConnectorId === walletConnectConnector.id;
@@ -194,7 +190,7 @@ export default function ConnectButton() {
     );
   }
 
-  // Connected state (no changes)
+  // Connected state remains completely unchanged
   return (
     <div className="relative">
       <button

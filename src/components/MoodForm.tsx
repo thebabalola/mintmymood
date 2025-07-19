@@ -9,7 +9,7 @@ import { MintMyMoodABI } from "../lib/MintMyMoodABI";
 import { MoodType } from "../types";
 import { FaImage, FaSpinner, FaTimes, FaMagic } from "react-icons/fa";
 
-// The UI-only InputField component
+// The InputField component is already well-sized for mobile. No changes needed here.
 const InputField = ({
   label,
   value,
@@ -39,7 +39,7 @@ const InputField = ({
 );
 
 export default function MoodForm() {
-  // --- YOUR ORIGINAL STATE AND HOOKS ---
+  // --- YOUR ORIGINAL STATE AND LOGIC (UNCHANGED) ---
   const [prompt, setPrompt] = useState("");
   const [mood, setMood] = useState("");
   const [title, setTitle] = useState("");
@@ -50,23 +50,18 @@ export default function MoodForm() {
   const [loading, setLoading] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState("");
   const [error, setError] = useState("");
-
   const { address, isConnected, isConnecting } = useAccount();
   const { writeContractAsync } = useWriteContract();
-
   const [isClient, setIsClient] = useState(false);
   useEffect(() => {
     setIsClient(true);
   }, []);
-
-  // --- YOUR ORIGINAL useReadContract CALL (Corrected) ---
   const { data: moodTypes } = useReadContract({
     address: process.env.NEXT_PUBLIC_CONTRACT_ADDRESS as `0x${string}`,
     abi: MintMyMoodABI,
-    functionName: "getMoodTypes", // This has been corrected back to your original function name
+    functionName: "getMoodTypes",
   }) as { data: MoodType[] | undefined };
 
-  // --- YOUR ORIGINAL LOGIC FUNCTIONS ---
   const handleGenerateImage = async () => {
     if (!prompt || !mood || !title || !caption) {
       setError("Please fill all fields to bring your mood to life!");
@@ -77,7 +72,6 @@ export default function MoodForm() {
     setImageUrl("");
     setLoadingMessage("AI is crafting your mood NFT...");
     try {
-      // Using your original prompt logic
       const blob = await generateMoodImage(`${mood} ${prompt}`);
       setImageBlob(blob);
       setImageUrl(URL.createObjectURL(blob));
@@ -90,7 +84,6 @@ export default function MoodForm() {
       setLoadingMessage("");
     }
   };
-
   const handleApproveAndMint = async () => {
     if (!imageBlob || !isConnected || !address || isConnecting) {
       setError("Cannot mint. Check image and wallet connection.");
@@ -126,7 +119,6 @@ export default function MoodForm() {
       setLoadingMessage("");
     }
   };
-
   const handleRetryOrCloseModal = () => {
     setImageUrl("");
     setImageBlob(null);
@@ -136,16 +128,19 @@ export default function MoodForm() {
     setCaption("");
     setIpfsUri("");
   };
+  // --- END OF YOUR LOGIC ---
 
   return (
     <>
+      {/* THE FIX: Adjusted padding for better mobile view */}
       <div
         id="mood-form"
-        className="w-full max-w-2xl mx-auto bg-white/30 backdrop-blur-lg rounded-2xl p-6 md:p-8 shadow-lg border border-white/40"
+        className="w-full max-w-2xl mx-auto bg-white/30 backdrop-blur-lg rounded-2xl p-4 sm:p-6 md:p-8 shadow-lg border border-white/40"
       >
         <div className="flex items-center gap-3 mb-6">
           <FaImage className="text-2xl text-[#FF6B6B]" />
-          <h2 className="text-2xl font-bold text-[#222222]">
+          {/* THE FIX: Responsive font size for the main title */}
+          <h2 className="text-xl md:text-2xl font-bold text-[#222222]">
             Mint Your Mood Today
           </h2>
         </div>
@@ -197,23 +192,21 @@ export default function MoodForm() {
             </label>
             <div className="relative">
               {!prompt && (
-                <div className="absolute top-3 left-3 w-full h-full pointer-events-none text-gray-400 text-sm leading-relaxed">
+                // THE FIX: Responsive font size for the placeholder to prevent overflow
+                <div className="absolute top-3 left-3 w-full h-full pointer-events-none text-gray-400 text-xs sm:text-sm leading-relaxed">
                   <p className="mb-2">
                     <strong className="text-gray-500">
                       First, your journal entry:
                     </strong>
                     <br />
-                    "I felt so happy today after getting the promotion. it made
-                    me smile all day..."
+                    "I felt so happy today after getting the promotion..."
                   </p>
                   <p>
                     <strong className="text-gray-500">
                       Then, describe the NFT visual:
                     </strong>
                     <br />
-                    "A cheerful emoji with bright sparkling eyes, tossing
-                    confetti in the air, wearing heart-shaped sunglasses. NFT
-                    art style, vibrant colors..."
+                    "A cheerful emoji with sparkling eyes, tossing confetti..."
                   </p>
                 </div>
               )}
@@ -232,7 +225,8 @@ export default function MoodForm() {
           <button
             onClick={handleGenerateImage}
             disabled={loading}
-            className="w-full flex items-center justify-center gap-3 bg-[#FF6B6B] text-white font-bold text-lg px-6 py-4 rounded-xl shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 disabled:bg-gray-400 disabled:scale-100 disabled:shadow-none"
+            // THE FIX: Responsive font size and padding for the main button
+            className="w-full flex items-center justify-center gap-3 bg-[#FF6B6B] text-white font-bold text-base md:text-lg px-6 py-3 md:py-4 rounded-xl shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 disabled:bg-gray-400 disabled:scale-100 disabled:shadow-none"
           >
             {loading ? <FaSpinner className="animate-spin" /> : <FaMagic />}
             {loading ? loadingMessage : "Generate My Mood NFT"}
@@ -243,21 +237,23 @@ export default function MoodForm() {
       {isClient &&
         imageUrl &&
         createPortal(
+          // THE FIX: Responsive padding for the modal backdrop
           <div
-            className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-md"
+            className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-md p-4"
             onClick={handleRetryOrCloseModal}
           >
+            {/* THE FIX: Responsive padding for the modal content */}
             <div
-              className="w-full max-w-lg rounded-2xl bg-[#F7F8FC] p-6 shadow-2xl relative"
+              className="w-full max-w-lg rounded-2xl bg-[#F7F8FC] p-4 sm:p-6 shadow-2xl relative"
               onClick={(e) => e.stopPropagation()}
             >
               <button
                 onClick={handleRetryOrCloseModal}
-                className="absolute top-4 right-4 text-[#666666] hover:text-[#222222]"
+                className="absolute top-3 right-3 sm:top-4 sm:right-4 text-[#666666] hover:text-[#222222]"
               >
                 <FaTimes size={24} />
               </button>
-              <h3 className="text-xl font-bold text-center text-[#222222] mb-4">
+              <h3 className="text-lg md:text-xl font-bold text-center text-[#222222] mb-4">
                 Your Mood NFT Preview
               </h3>
               <div className="bg-gray-200 rounded-lg p-2 mb-4">

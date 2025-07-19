@@ -13,11 +13,9 @@ interface NFTMetadata {
   attributes: { trait_type: string; value: string }[];
 }
 
-// A dedicated, beautifully styled card for each NFT
+// NFTCard component with responsive updates
 const NFTCard = ({ nft }: { nft: NFTMetadata }) => {
-  // THE UPDATE: State to handle the flip
   const [isFlipped, setIsFlipped] = useState(false);
-
   const ipfsUrl = nft.image
     ? nft.image.replace("ipfs://", "https://ipfs.io/ipfs/")
     : "";
@@ -29,28 +27,27 @@ const NFTCard = ({ nft }: { nft: NFTMetadata }) => {
       day: "numeric",
     });
   };
-
   const mood = nft.attributes.find((attr) => attr.trait_type === "Mood")?.value;
   const timestamp = nft.attributes.find(
     (attr) => attr.trait_type === "Timestamp"
   )?.value;
 
   return (
-    // THE UPDATE: Container to create 3D perspective. Click handler toggles the flip state.
     <div
       className="group cursor-pointer [perspective:1000px]"
       onClick={() => setIsFlipped(!isFlipped)}
     >
+      {/* THE FIX: Removed inline style and used responsive min-height classes */}
       <div
-        className={`relative w-full h-full transition-transform duration-700 [transform-style:preserve-3d] ${
+        className={`relative w-full h-full transition-transform duration-700 [transform-style:preserve-3d] min-h-[420px] sm:min-h-[380px] ${
           isFlipped ? "[transform:rotateY(180deg)]" : ""
         }`}
-        style={{ minHeight: "300px" }} // Set a min-height to ensure the card has dimensions to flip correctly
       >
         {/* --- FRONT OF THE CARD --- */}
         <div className="absolute w-full h-full [backface-visibility:hidden]">
           <div className="bg-white/40 backdrop-blur-lg rounded-2xl p-4 border border-white/30 shadow-md h-full flex flex-col group-hover:shadow-xl group-hover:-translate-y-1 transition-all duration-300">
-            <div className="aspect-square w-full overflow-hidden rounded-xl bg-gray-200">
+            {/* THE FIX: Image container is now taller on mobile and square on larger screens */}
+            <div className="aspect-[4/5] sm:aspect-square w-full overflow-hidden rounded-xl bg-gray-200">
               <img
                 src={ipfsUrl}
                 alt={nft.name}
@@ -114,10 +111,11 @@ const NFTCard = ({ nft }: { nft: NFTMetadata }) => {
   );
 };
 
-// SkeletonCard component remains unchanged
+// SkeletonCard component with responsive updates
 const SkeletonCard = () => (
-  <div className="bg-gray-200/50 rounded-2xl p-4 animate-pulse">
-    <div className="aspect-square w-full rounded-xl bg-gray-300/60"></div>
+  <div className="bg-gray-200/50 rounded-2xl p-4 animate-pulse min-h-[420px] sm:min-h-[380px]">
+    {/* THE FIX: Image skeleton matches the responsive aspect ratio of the real card */}
+    <div className="aspect-[4/5] sm:aspect-square w-full rounded-xl bg-gray-300/60"></div>
     <div className="mt-4 space-y-3">
       <div className="h-4 w-3/4 rounded bg-gray-300/60"></div>
       <div className="h-3 w-full rounded bg-gray-300/60"></div>
@@ -126,8 +124,9 @@ const SkeletonCard = () => (
   </div>
 );
 
-// Main NFTGallery component remains unchanged
+// Main NFTGallery component with responsive updates
 export default function NFTGallery() {
+  // --- YOUR ORIGINAL LOGIC, STATE, AND HOOKS (UNCHANGED) ---
   const [nfts, setNfts] = useState<NFTMetadata[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -144,7 +143,6 @@ export default function NFTGallery() {
     abi: MintMyMoodABI,
     functionName: "totalSupply",
   });
-
   useEffect(() => {
     async function fetchNFTs() {
       if (!mintCount || !publicClient || mintCountLoading) return;
@@ -198,13 +196,16 @@ export default function NFTGallery() {
     }
     fetchNFTs();
   }, [mintCount, publicClient, mintCountLoading, contractAddress]);
+  // --- END OF YOUR LOGIC ---
 
+  // Loading state with responsive SkeletonCard grid
   if (loading) {
     return (
       <section className="w-full max-w-6xl mx-auto px-4 py-8">
-        <h2 className="text-3xl font-bold text-[#222222] mb-6 flex items-center gap-3">
-          <FaImage /> My Mood Gallery
+        <h2 className="text-2xl sm:text-3xl font-bold text-[#222222] mb-6 flex items-center gap-3">
+          <FaImage /> Mood Gallery
         </h2>
+        {/* THE FIX: Grid columns are responsive */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {Array.from({ length: 8 }).map((_, i) => (
             <SkeletonCard key={i} />
@@ -214,6 +215,7 @@ export default function NFTGallery() {
     );
   }
 
+  // Error state (unchanged)
   if (error) {
     return (
       <section className="w-full max-w-6xl mx-auto px-4 py-8">
@@ -226,6 +228,7 @@ export default function NFTGallery() {
     );
   }
 
+  // Empty state (unchanged)
   if (nfts.length === 0) {
     return (
       <section className="w-full max-w-6xl mx-auto px-4 py-8">
@@ -243,11 +246,14 @@ export default function NFTGallery() {
     );
   }
 
+  // Main gallery display
   return (
     <section className="w-full max-w-6xl mx-auto px-4 py-8">
-      <h2 className="text-3xl font-bold text-[#222222] mb-6 flex items-center gap-3">
-        <FaImage /> My Mood Gallery
+      {/* THE FIX: Responsive title font size */}
+      <h2 className="text-2xl sm:text-3xl font-bold text-[#222222] mb-6 flex items-center gap-3">
+        <FaImage /> Mood Gallery
       </h2>
+      {/* THE FIX: Grid columns are responsive */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
         {nfts.map((nft, index) => (
           <NFTCard key={index} nft={nft} />

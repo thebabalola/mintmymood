@@ -1,11 +1,10 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-// Added FaHeart and HiSparkles back for the process flow
 import { FaGem, FaMagic, FaTrophy, FaBrain, FaHeart } from "react-icons/fa";
 import { HiSparkles } from "react-icons/hi";
 
-// The dedicated FeatureCard component remains unchanged
+// The FeatureCard component's UI is already suitable for mobile, so no changes are needed here.
 const FeatureCard = ({
   icon,
   title,
@@ -45,13 +44,12 @@ export default function MiniHero() {
         setIsAnimating(false);
       }, 200);
     }, 2500);
-
     return () => clearInterval(interval);
   }, []);
 
   return (
-    <section className="relative w-full overflow-hidden py-16 md:py-24">
-      {/* Background radial gradients (no change) */}
+    // THE FIX: Adjusted vertical padding for better spacing on mobile.
+    <section className="relative w-full overflow-hidden py-16 md:py-20 lg:py-24">
       <div className="absolute inset-0 -z-10">
         <div className="absolute top-0 left-0 w-72 h-72 bg-[#FF6B6B] rounded-full opacity-20 blur-3xl animate-pulse"></div>
         <div className="absolute bottom-0 right-0 w-72 h-72 bg-[#FFD93D] rounded-full opacity-20 blur-3xl animate-pulse delay-1000"></div>
@@ -59,11 +57,13 @@ export default function MiniHero() {
       </div>
 
       <div className="container mx-auto max-w-6xl px-4">
+        {/* THE FIX: Adjusted gap for mobile vs. desktop */}
         <div className="grid grid-cols-1 lg:grid-cols-2 items-center gap-12 lg:gap-16">
-          {/* Left Side: The Message & CTA */}
           <div className="text-center lg:text-left">
-            <h1 className="text-4xl lg:text-5xl font-extrabold text-[#222222] mb-4 tracking-tight">
-              Turn Your Feelings Into <br />
+            {/* THE FIX: Responsive font sizes for the main headline. */}
+            <h1 className="text-4xl sm:text-5xl font-extrabold text-[#222222] mb-4 tracking-tight">
+              Turn Your Feelings Into <br className="hidden sm:block" />{" "}
+              {/* Hide line break on very small screens */}
               <span className="bg-gradient-to-r from-[#FF6B6B] via-[#FFD93D] to-[#6BCB77] bg-clip-text text-transparent">
                 Digital Treasures
               </span>
@@ -76,13 +76,14 @@ export default function MiniHero() {
               </span>
             </h1>
 
-            <p className="text-lg text-[#666666] mb-8 leading-relaxed max-w-lg mx-auto lg:mx-0">
+            {/* THE FIX: Responsive font size for the paragraph. */}
+            <p className="text-md md:text-lg text-[#666666] mb-8 leading-relaxed max-w-lg mx-auto lg:mx-0">
               The first gamified Web3 mood journal. Express your emotions daily,
               receive AI-powered insights, and own your wellness journey as
               unique NFTs.
             </p>
 
-            {/* --- ADDED SECTION: The Process Flow --- */}
+            {/* The flex-wrap already makes this section responsive. No changes needed. */}
             <div className="flex flex-wrap items-center justify-center lg:justify-start gap-4 mb-8">
               <div className="flex items-center gap-2">
                 <FaHeart className="text-[#FF6B6B] w-5 h-5" />
@@ -99,9 +100,10 @@ export default function MiniHero() {
                 <span className="font-medium text-[#222222]">Own</span>
               </div>
             </div>
-            {/* --- END OF ADDED SECTION --- */}
 
-            <div className="flex justify-center">
+            {/* THE FIX: The justify-center is already responsive due to lg:justify-start on the parent */}
+            <div className="flex justify-center lg:justify-start">
+              {/* As per your code, this is a <p> tag. Its responsiveness is inherited. */}
               <p
                 onClick={() =>
                   document
@@ -115,7 +117,7 @@ export default function MiniHero() {
             </div>
           </div>
 
-          {/* Right Side: Dynamic Feature Cards (no change) */}
+          {/* Feature cards stack automatically on mobile, which is correct. No changes needed. */}
           <div className="relative flex flex-col items-center gap-4">
             <div className="w-full lg:translate-x-4">
               <FeatureCard
