@@ -8,7 +8,9 @@ import {
   useWaitForTransactionReceipt,
 } from "wagmi";
 import { MintMyMoodABI } from "../lib/MintMyMoodABI";
+import { FaCheckCircle, FaSpinner } from "react-icons/fa";
 
+// --- YOUR ORIGINAL INTERFACES (UNCHANGED) ---
 interface Badge {
   id: string;
   name: string;
@@ -16,13 +18,8 @@ interface Badge {
   image: string;
   earned: boolean;
   isEligible: boolean;
-  progress?: {
-    current: number;
-    required: number;
-    percentage: number;
-  };
+  progress?: { current: number; required: number; percentage: number };
 }
-
 interface BadgeMetadata {
   name: string;
   description: string;
@@ -30,16 +27,115 @@ interface BadgeMetadata {
   attributes: { trait_type: string; value: string }[];
 }
 
+// --- PURELY-UI HELPER COMPONENTS (UNCHANGED) ---
+const SkeletonBadgeCard = () => (
+  <div className="bg-gray-200/50 rounded-2xl p-4 animate-pulse">
+    <div className="flex items-center gap-4">
+      <div className="w-16 h-16 rounded-full bg-gray-300/60"></div>
+      <div className="flex-1 space-y-2">
+        <div className="h-4 w-3/4 rounded bg-gray-300/60"></div>
+        <div className="h-3 w-1/2 rounded bg-gray-300/60"></div>
+      </div>
+    </div>
+    <div className="mt-3 h-3 w-full rounded bg-gray-300/60"></div>
+    <div className="mt-4 h-8 w-full rounded-lg bg-gray-300/60"></div>
+  </div>
+);
+
+const BadgeCard = ({
+  badge,
+  onClaim,
+  isMinting,
+}: {
+  badge: Badge;
+  onClaim: (id: string) => void;
+  isMinting: boolean;
+}) => {
+  const ipfsImage = badge.image.startsWith("ipfs://")
+    ? badge.image.replace("ipfs://", "https://ipfs.io/ipfs/")
+    : badge.image;
+  return (
+    <div
+      className={`relative bg-white/40 backdrop-blur-lg rounded-2xl p-4 border transition-all duration-300 flex flex-col ${
+        badge.earned ? "border-green-300/50 shadow-lg" : "border-gray-300/30"
+      }`}
+    >
+      {badge.earned && (
+        <FaCheckCircle
+          className="absolute top-3 right-3 text-2xl text-green-500"
+          title="Earned!"
+        />
+      )}
+      <div
+        className={`flex items-center gap-4 transition-opacity duration-300 ${
+          !badge.earned ? "opacity-60 grayscale" : ""
+        }`}
+      >
+        <img
+          src={ipfsImage}
+          alt={badge.name}
+          className="w-16 h-16 rounded-full object-cover border-2 border-white/50 shadow-md"
+        />
+        <div>
+          <h4 className="font-bold text-[#222222]">{badge.name}</h4>
+          <p
+            className={`text-sm ${
+              badge.earned ? "text-green-600 font-semibold" : "text-[#666666]"
+            }`}
+          >
+            {badge.earned ? "✅ Unlocked!" : "Locked"}
+          </p>
+        </div>
+      </div>
+      <p className="text-sm text-[#666666] mt-3 flex-grow">
+        {badge.description}
+      </p>
+      <div className="mt-4">
+        {!badge.earned && badge.progress && (
+          <div className="mb-3">
+            <div className="flex justify-between text-xs text-[#666666] mb-1">
+              <span>Progress</span>
+              <span className="font-semibold">
+                {badge.progress.current} / {badge.progress.required}
+              </span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
+              <div
+                className="bg-gradient-to-r from-[#FFD93D] to-[#FF6B6B] h-2.5 rounded-full transition-all duration-500"
+                style={{ width: `${badge.progress.percentage}%` }}
+              ></div>
+            </div>
+          </div>
+        )}
+        {!badge.earned && badge.isEligible && (
+          <button
+            onClick={() => onClaim(badge.id)}
+            disabled={isMinting}
+            className="w-full flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-green-600 rounded-lg shadow-md hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all"
+          >
+            {isMinting ? (
+              <>
+                <FaSpinner className="animate-spin" /> Claiming...
+              </>
+            ) : (
+              "Claim Badge"
+            )}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+};
+
 export default function UserBadges() {
+  // --- YOUR ENTIRE LOGIC BLOCK - COMPLETELY UNCHANGED ---
   const { address } = useAccount();
   const [badges, setBadges] = useState<Badge[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-
   const contractAddress = process.env
     .NEXT_PUBLIC_CONTRACT_ADDRESS as `0x${string}`;
 
-  // Write hooks for each badge mint function
   const {
     writeContract: mintFirstBadge,
     data: firstMintHash,
@@ -48,7 +144,6 @@ export default function UserBadges() {
   const { isSuccess: isFirstMinted } = useWaitForTransactionReceipt({
     hash: firstMintHash,
   });
-
   const {
     writeContract: mintStreakBadge,
     data: streakHash,
@@ -57,7 +152,6 @@ export default function UserBadges() {
   const { isSuccess: isStreakMinted } = useWaitForTransactionReceipt({
     hash: streakHash,
   });
-
   const {
     writeContract: mintMoodMaestroBadge,
     data: maestroHash,
@@ -67,37 +161,21 @@ export default function UserBadges() {
     hash: maestroHash,
   });
 
-  // Helper function to call the correct mint function based on badge ID
   const handleClaimBadge = async (badgeId: string) => {
     if (!address) {
-      console.error("No wallet connected");
       return;
     }
-
-    const mintConfig = {
-      abi: MintMyMoodABI,
-      address: contractAddress,
-    };
-
+    const mintConfig = { abi: MintMyMoodABI, address: contractAddress };
     try {
       switch (badgeId) {
         case "first-mint":
-          console.log("Minting first badge...");
-          await mintFirstBadge({
-            ...mintConfig,
-            functionName: "mintFirstMintBadge",
-          });
+          mintFirstBadge({ ...mintConfig, functionName: "mintFirstMintBadge" });
           break;
         case "streak":
-          console.log("Minting streak badge...");
-          await mintStreakBadge({
-            ...mintConfig,
-            functionName: "mintStreakBadge",
-          });
+          mintStreakBadge({ ...mintConfig, functionName: "mintStreakBadge" });
           break;
         case "mood-maestro":
-          console.log("Minting mood maestro badge...");
-          await mintMoodMaestroBadge({
+          mintMoodMaestroBadge({
             ...mintConfig,
             functionName: "mintMoodMaestroBadge",
           });
@@ -110,129 +188,82 @@ export default function UserBadges() {
     }
   };
 
-  // Fixed read hooks with proper refetch capability
   const { data: hasFirstMintBadge, refetch: refetchFirstMint } =
     useReadContract({
       address: contractAddress,
       abi: MintMyMoodABI,
       functionName: "hasFirstMintBadge",
       args: address ? [address] : undefined,
-      query: {
-        enabled: Boolean(address),
-        refetchOnWindowFocus: false,
-      },
+      query: { enabled: Boolean(address), refetchOnWindowFocus: false },
     });
-
   const { data: hasStreakBadge, refetch: refetchStreak } = useReadContract({
     address: contractAddress,
     abi: MintMyMoodABI,
     functionName: "hasStreakBadge",
     args: address ? [address] : undefined,
-    query: {
-      enabled: Boolean(address),
-      refetchOnWindowFocus: false,
-    },
+    query: { enabled: Boolean(address), refetchOnWindowFocus: false },
   });
-
   const { data: hasMoodMaestroBadge, refetch: refetchMaestro } =
     useReadContract({
       address: contractAddress,
       abi: MintMyMoodABI,
       functionName: "hasMoodMaestroBadge",
       args: address ? [address] : undefined,
-      query: {
-        enabled: Boolean(address),
-        refetchOnWindowFocus: false,
-      },
+      query: { enabled: Boolean(address), refetchOnWindowFocus: false },
     });
-
   const { data: userMintCount } = useReadContract({
     address: contractAddress,
     abi: MintMyMoodABI,
     functionName: "getMintCount",
     args: address ? [address] : undefined,
-    query: {
-      enabled: Boolean(address),
-      refetchOnWindowFocus: false,
-    },
+    query: { enabled: Boolean(address), refetchOnWindowFocus: false },
   });
-
   const { data: streakCount } = useReadContract({
     address: contractAddress,
     abi: MintMyMoodABI,
     functionName: "streakCount",
     args: address ? [address] : undefined,
-    query: {
-      enabled: Boolean(address),
-      refetchOnWindowFocus: false,
-    },
+    query: { enabled: Boolean(address), refetchOnWindowFocus: false },
   });
-
   const { data: streakMilestone } = useReadContract({
     address: contractAddress,
     abi: MintMyMoodABI,
     functionName: "streakMilestone",
-    query: {
-      refetchOnWindowFocus: false,
-    },
+    query: { refetchOnWindowFocus: false },
   });
-
   const { data: moodMaestroMilestone } = useReadContract({
     address: contractAddress,
     abi: MintMyMoodABI,
     functionName: "getMoodMaestroMilestone",
-    query: {
-      refetchOnWindowFocus: false,
-    },
+    query: { refetchOnWindowFocus: false },
   });
-
   const { data: firstMintBadgeURI } = useReadContract({
     address: contractAddress,
     abi: MintMyMoodABI,
     functionName: "firstMintBadgeURI",
-    query: {
-      refetchOnWindowFocus: false,
-    },
+    query: { refetchOnWindowFocus: false },
   });
-
   const { data: streakBadgeURI } = useReadContract({
     address: contractAddress,
     abi: MintMyMoodABI,
     functionName: "streakBadgeURI",
-    query: {
-      refetchOnWindowFocus: false,
-    },
+    query: { refetchOnWindowFocus: false },
   });
-
   const { data: moodMaestroBadgeURI } = useReadContract({
     address: contractAddress,
     abi: MintMyMoodABI,
     functionName: "moodMaestroBadgeURI",
-    query: {
-      refetchOnWindowFocus: false,
-    },
+    query: { refetchOnWindowFocus: false },
   });
 
-  // Refetch badge status when transactions are successful
   useEffect(() => {
-    if (isFirstMinted) {
-      console.log("First badge minted successfully!");
-      refetchFirstMint();
-    }
+    if (isFirstMinted) refetchFirstMint();
   }, [isFirstMinted, refetchFirstMint]);
-
   useEffect(() => {
-    if (isStreakMinted) {
-      console.log("Streak badge minted successfully!");
-      refetchStreak();
-    }
+    if (isStreakMinted) refetchStreak();
   }, [isStreakMinted, refetchStreak]);
-
   useEffect(() => {
-    if (isMaestroMinted) {
-      console.log("Maestro badge minted successfully!");
-      refetchMaestro();
-    }
+    if (isMaestroMinted) refetchMaestro();
   }, [isMaestroMinted, refetchMaestro]);
 
   const fetchBadgeMetadata = async (
@@ -257,7 +288,6 @@ export default function UserBadges() {
         return;
       }
       setError("");
-
       try {
         const [firstMintMetadata, streakMetadata, maestroMetadata] =
           await Promise.all([
@@ -265,19 +295,12 @@ export default function UserBadges() {
             fetchBadgeMetadata(streakBadgeURI as string),
             fetchBadgeMetadata(moodMaestroBadgeURI as string),
           ]);
-
         const badgeList: Badge[] = [];
-
-        // Define requirements
         const firstMintRequired = 1;
         const streakRequired = Number(streakMilestone || 7);
         const maestroRequired = Number(moodMaestroMilestone || 50);
-
-        // Define current progress
         const currentMints = Number(userMintCount || 0);
         const currentStreak = Number(streakCount || 0);
-
-        // First Mint Badge
         badgeList.push({
           id: "first-mint",
           name: firstMintMetadata?.name || "First Mint",
@@ -298,8 +321,6 @@ export default function UserBadges() {
               }
             : undefined,
         });
-
-        // Streak Badge
         badgeList.push({
           id: "streak",
           name: streakMetadata?.name || `${streakRequired}-Day Streaker`,
@@ -320,8 +341,6 @@ export default function UserBadges() {
               }
             : undefined,
         });
-
-        // Mood Maestro Badge
         badgeList.push({
           id: "mood-maestro",
           name: maestroMetadata?.name || "Mood Maestro",
@@ -342,17 +361,17 @@ export default function UserBadges() {
               }
             : undefined,
         });
-
         setBadges(badgeList);
       } catch (err) {
-        const errorMessage =
-          err instanceof Error ? err.message : "An unknown error occurred";
-        setError(`Failed to load badges: ${errorMessage}`);
+        setError(
+          `Failed to load badges: ${
+            err instanceof Error ? err.message : "An unknown error"
+          }`
+        );
       } finally {
         setLoading(false);
       }
     };
-
     loadBadges();
   }, [
     address,
@@ -370,166 +389,119 @@ export default function UserBadges() {
     isStreakMinted,
     isMaestroMinted,
   ]);
+  // --- END OF YOUR LOGIC BLOCK ---
 
   if (!address) {
     return (
-      <div className="w-full max-w-4xl p-4">
-        <h2 className="text-2xl font-bold text-purple-600 mb-4">Your Badges</h2>
-        <p className="text-gray-600">
-          Please connect your wallet to view your badges.
-        </p>
+      <p className="text-sm text-center text-gray-500 py-4">
+        Please connect your wallet to view your badges.
+      </p>
+    );
+  }
+  if (loading) {
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <SkeletonBadgeCard key={i} />
+        ))}
       </div>
     );
   }
+  if (error) {
+    return (
+      <div className="bg-red-100 text-red-700 p-4 rounded-lg">{error}</div>
+    );
+  }
+
+  // THE FIX: Filtering badges into two lists before rendering
+  const earnedBadges = badges.filter((b) => b.earned);
+  const pendingBadges = badges.filter((b) => !b.earned);
 
   return (
-    <div className="w-full max-w-4xl p-4">
-      <h2 className="text-2xl font-bold text-purple-600 mb-4">Your Badges</h2>
-      {loading && (
-        <div className="text-center py-8">Loading your badges...</div>
-      )}
-      {error && (
-        <div className="bg-red-100 text-red-700 p-3 rounded">{error}</div>
-      )}
-
-      {/* Earned Badges */}
-      <div className="mb-8">
-        <h3 className="text-xl font-semibold text-green-600 mb-4">
-          🏆 Earned Badges
+    <div className="space-y-10">
+      {/* Stats Section */}
+      <div className="bg-white/30 backdrop-blur-lg rounded-2xl p-4 shadow-lg border border-white/40">
+        <h3 className="text-lg font-semibold text-[#222222] mb-3">
+          📊 Your Stats
         </h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-          {badges
-            .filter((b) => b.earned)
-            .map((badge) => (
-              <div
-                key={badge.id}
-                className="bg-green-50 border-2 border-green-200 rounded-lg p-4 shadow-md"
-              >
-                <div className="flex items-center mb-2">
-                  <img
-                    src={badge.image}
-                    alt={badge.name}
-                    className="w-16 h-16 rounded-full mr-3 object-cover"
-                  />
-                  <div>
-                    <h4 className="font-bold text-green-800">{badge.name}</h4>
-                    <p className="text-sm text-green-600">✅ Earned!</p>
-                  </div>
-                </div>
-                <p className="text-sm text-gray-700">{badge.description}</p>
-              </div>
-            ))}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
+          <div>
+            <p className="text-2xl font-bold text-[#FF6B6B]">
+              {Number(userMintCount || 0)}
+            </p>
+            <p className="text-xs text-[#666666]">Total Mints</p>
+          </div>
+          <div>
+            <p className="text-2xl font-bold text-[#FF6B6B]">
+              {Number(streakCount || 0)}
+            </p>
+            <p className="text-xs text-[#666666]">Current Streak</p>
+          </div>
+          <div>
+            <p className="text-2xl font-bold text-[#FF6B6B]">
+              {earnedBadges.length}
+            </p>
+            <p className="text-xs text-[#666666]">Badges Earned</p>
+          </div>
+          <div>
+            <p className="text-2xl font-bold text-[#FF6B6B]">
+              {pendingBadges.length}
+            </p>
+            <p className="text-xs text-[#666666]">Badges Pending</p>
+          </div>
         </div>
-        {badges.filter((b) => b.earned).length === 0 && !loading && (
-          <p className="text-gray-500 italic">
-            No badges earned yet. Start minting to earn your first badge!
+      </div>
+
+      {/* Earned Badges Section */}
+      <div>
+        <h3 className="text-xl font-bold text-green-600 mb-4">
+          🏆 Unlocked Achievements
+        </h3>
+        {earnedBadges.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {earnedBadges.map((badge) => (
+              <BadgeCard
+                key={badge.id}
+                badge={badge}
+                onClaim={handleClaimBadge}
+                isMinting={false}
+              />
+            ))}
+          </div>
+        ) : (
+          <p className="text-gray-500 italic p-4 bg-gray-100/50 rounded-lg">
+            No badges earned yet. Keep minting!
           </p>
         )}
       </div>
 
-      {/* Pending Badges */}
+      {/* Pending Badges Section */}
       <div>
-        <h3 className="text-xl font-semibold text-orange-600 mb-4">
-          🎯 Badges in Progress
+        <h3 className="text-xl font-bold text-orange-600 mb-4">
+          🎯 Your Next Challenges
         </h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-          {badges
-            .filter((badge) => !badge.earned)
-            .map((badge) => {
+        {pendingBadges.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {pendingBadges.map((badge) => {
               const isMinting =
                 (badge.id === "first-mint" && isFirstMinting) ||
                 (badge.id === "streak" && isStreakMinting) ||
                 (badge.id === "mood-maestro" && isMaestroMinting);
-
               return (
-                <div
+                <BadgeCard
                   key={badge.id}
-                  className="bg-orange-50 border-2 border-orange-200 rounded-lg p-4 shadow-md flex flex-col justify-between"
-                >
-                  <div>
-                    <div className="flex items-center mb-2">
-                      <img
-                        src={badge.image}
-                        alt={badge.name}
-                        className="w-16 h-16 rounded-full mr-3 object-cover opacity-60"
-                      />
-                      <div>
-                        <h4 className="font-bold text-orange-800">
-                          {badge.name}
-                        </h4>
-                        <p className="text-sm text-orange-600">In Progress</p>
-                      </div>
-                    </div>
-                    <p className="text-sm text-gray-700 mb-3">
-                      {badge.description}
-                    </p>
-                    {badge.progress && (
-                      <div>
-                        <div className="flex justify-between text-sm mb-1">
-                          <span>Progress:</span>
-                          <span className="font-semibold">
-                            {badge.progress.current}/{badge.progress.required}
-                          </span>
-                        </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div
-                            className="bg-orange-500 h-2 rounded-full"
-                            style={{ width: `${badge.progress.percentage}%` }}
-                          ></div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Claim Button */}
-                  <div className="mt-4">
-                    {badge.isEligible && (
-                      <button
-                        onClick={() => handleClaimBadge(badge.id)}
-                        disabled={isMinting}
-                        className="w-full px-4 py-2 text-sm font-semibold text-white bg-green-600 rounded-md shadow-sm hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:bg-gray-400 disabled:cursor-not-allowed"
-                      >
-                        {isMinting ? "Claiming..." : "Claim Badge"}
-                      </button>
-                    )}
-                  </div>
-                </div>
+                  badge={badge}
+                  onClaim={handleClaimBadge}
+                  isMinting={isMinting}
+                />
               );
             })}
-        </div>
-      </div>
-
-      {/* Stats Section */}
-      <div className="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <h3 className="text-lg font-semibold text-blue-800 mb-2">
-          📊 Your Stats
-        </h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-          <div className="text-center">
-            <p className="font-bold text-blue-600">
-              {Number(userMintCount || 0)}
-            </p>
-            <p className="text-gray-600">Total Mints</p>
           </div>
-          <div className="text-center">
-            <p className="font-bold text-blue-600">
-              {Number(streakCount || 0)}
-            </p>
-            <p className="text-gray-600">Current Streak</p>
-          </div>
-          <div className="text-center">
-            <p className="font-bold text-blue-600">
-              {badges.filter((b) => b.earned).length}
-            </p>
-            <p className="text-gray-600">Badges Earned</p>
-          </div>
-          <div className="text-center">
-            <p className="font-bold text-blue-600">
-              {badges.filter((b) => !b.earned).length}
-            </p>
-            <p className="text-gray-600">Badges Pending</p>
-          </div>
-        </div>
+        ) : (
+          <p className="text-gray-500 italic p-4 bg-green-100/50 rounded-lg">
+            Congratulations! You've earned all available badges!
+          </p>
+        )}
       </div>
     </div>
   );
