@@ -1,10 +1,9 @@
 import Link from "next/link";
-import { FaGithub, FaTwitter } from "react-icons/fa";
+import { FaTrophy, FaImages, FaUserCircle } from "react-icons/fa";
 
-// Reusing the logo concept from the Header for consistency
+// Logo component remains unchanged
 const Logo = () => (
   <Link href="/" className="flex items-center gap-2">
-    {/* TODO: Replace this div with your actual <Image> or <svg> logo */}
     <div className="w-8 h-8 rounded-lg bg-[#FF6B6B] flex items-center justify-center font-bold text-white text-xl">
       M
     </div>
@@ -15,36 +14,45 @@ const Logo = () => (
 export default function Footer() {
   return (
     <footer className="w-full border-t border-gray-200/80 bg-[#F7F8FC]">
-      <div className="container mx-auto flex flex-col items-center justify-between gap-4 px-4 py-8 sm:flex-row md:px-6">
-        {/* Logo and Copyright */}
-        <div className="flex flex-col items-center gap-2 text-center sm:items-start">
-          <Logo />
-          <p className="text-sm text-[#666666]">
-            © {new Date().getFullYear()} MintMyMood. All rights reserved.
-          </p>
-        </div>
+      {/* 
+        THE FIX: The main container now orchestrates the layout.
+        - On mobile (default): `flex-col` stacks and centers everything.
+        - On desktop (`sm:`): `flex-row` and `justify-between` distributes the three main items evenly.
+      */}
+      <div className="container mx-auto flex flex-col items-center gap-6 px-4 py-6 sm:flex-row sm:justify-between md:px-6">
+        {/* Item 1: Logo (Stays on the left on desktop) */}
+        <Logo />
 
-        {/* Social Links */}
-        <div className="flex items-center gap-4">
-          <a
-            href="https://twitter.com/your-profile" // TODO: Add your Twitter link
-            target="_blank"
-            rel="noopener noreferrer"
-            title="Twitter"
+        {/* Item 2: Navigation (Perfectly centered on desktop) */}
+        <nav className="flex items-center gap-6">
+          <Link
+            href="/leaderboard"
+            title="Leaderboard"
             className="text-[#666666] transition-colors hover:text-[#222222]"
           >
-            <FaTwitter size={20} />
-          </a>
-          <a
-            href="https://github.com/your-repo" // TODO: Add your GitHub repo link
-            target="_blank"
-            rel="noopener noreferrer"
-            title="GitHub"
+            <FaTrophy size={20} />
+          </Link>
+          <Link
+            href="/gallery"
+            title="Mood Gallery"
             className="text-[#666666] transition-colors hover:text-[#222222]"
           >
-            <FaGithub size={20} />
-          </a>
-        </div>
+            <FaImages size={20} />
+          </Link>
+          <Link
+            href="/profile"
+            title="My Profile"
+            className="text-[#666666] transition-colors hover:text-[#222222]"
+          >
+            <FaUserCircle size={20} />
+          </Link>
+        </nav>
+
+        {/* Item 3: Copyright (Stays on the right on desktop) */}
+        {/* Shortened the text slightly for better balance */}
+        <p className="text-sm text-[#666666]">
+          © {new Date().getFullYear()} MintMyMood
+        </p>
       </div>
     </footer>
   );

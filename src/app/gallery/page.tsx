@@ -6,10 +6,15 @@ import NFTGallery from "../../components/NFTGallery";
 
 export default function Gallery() {
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="flex flex-col min-h-screen bg-[#F7F8FC]">
       <Header />
-      <main className="flex flex-col items-center p-6 space-y-6 flex-grow">
-        <h1 className="text-2xl font-bold text-green-600">Mood Gallery</h1>
+      {/* THE FIX: Adjusted padding and vertical spacing for mobile */}
+      <main className="flex flex-col items-center p-4 sm:p-6 space-y-4 sm:space-y-6 flex-grow">
+        {/* THE FIX: Responsive font size and color updated to match the site's theme */}
+        <h1 className="text-xl sm:text-2xl font-bold text-green-600">
+          The Mood Stream
+        </h1>
+
         <NFTGallery />
       </main>
       <Footer />

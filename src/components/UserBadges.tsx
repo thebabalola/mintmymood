@@ -28,6 +28,7 @@ interface BadgeMetadata {
 }
 
 // --- PURELY-UI HELPER COMPONENTS (UNCHANGED) ---
+// Note: These components are already mobile-friendly due to their simple structure.
 const SkeletonBadgeCard = () => (
   <div className="bg-gray-200/50 rounded-2xl p-4 animate-pulse">
     <div className="flex items-center gap-4">
@@ -41,7 +42,6 @@ const SkeletonBadgeCard = () => (
     <div className="mt-4 h-8 w-full rounded-lg bg-gray-300/60"></div>
   </div>
 );
-
 const BadgeCard = ({
   badge,
   onClaim,
@@ -135,7 +135,6 @@ export default function UserBadges() {
   const [error, setError] = useState("");
   const contractAddress = process.env
     .NEXT_PUBLIC_CONTRACT_ADDRESS as `0x${string}`;
-
   const {
     writeContract: mintFirstBadge,
     data: firstMintHash,
@@ -160,7 +159,6 @@ export default function UserBadges() {
   const { isSuccess: isMaestroMinted } = useWaitForTransactionReceipt({
     hash: maestroHash,
   });
-
   const handleClaimBadge = async (badgeId: string) => {
     if (!address) {
       return;
@@ -187,7 +185,6 @@ export default function UserBadges() {
       console.error("Error claiming badge:", error);
     }
   };
-
   const { data: hasFirstMintBadge, refetch: refetchFirstMint } =
     useReadContract({
       address: contractAddress,
@@ -255,7 +252,6 @@ export default function UserBadges() {
     functionName: "moodMaestroBadgeURI",
     query: { refetchOnWindowFocus: false },
   });
-
   useEffect(() => {
     if (isFirstMinted) refetchFirstMint();
   }, [isFirstMinted, refetchFirstMint]);
@@ -265,7 +261,6 @@ export default function UserBadges() {
   useEffect(() => {
     if (isMaestroMinted) refetchMaestro();
   }, [isMaestroMinted, refetchMaestro]);
-
   const fetchBadgeMetadata = async (
     uri: string
   ): Promise<BadgeMetadata | null> => {
@@ -279,7 +274,6 @@ export default function UserBadges() {
       return null;
     }
   };
-
   useEffect(() => {
     const loadBadges = async () => {
       if (!address) {
@@ -413,38 +407,37 @@ export default function UserBadges() {
     );
   }
 
-  // THE FIX: Filtering badges into two lists before rendering
   const earnedBadges = badges.filter((b) => b.earned);
   const pendingBadges = badges.filter((b) => !b.earned);
 
   return (
-    <div className="space-y-10">
-      {/* Stats Section */}
+    // THE FIX: Reduced vertical spacing on mobile
+    <div className="space-y-8 sm:space-y-10">
       <div className="bg-white/30 backdrop-blur-lg rounded-2xl p-4 shadow-lg border border-white/40">
-        <h3 className="text-lg font-semibold text-[#222222] mb-3">
+        <h3 className="text-base sm:text-lg font-semibold text-[#222222] mb-3">
           📊 Your Stats
         </h3>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
           <div>
-            <p className="text-2xl font-bold text-[#FF6B6B]">
+            <p className="text-xl sm:text-2xl font-bold text-[#FF6B6B]">
               {Number(userMintCount || 0)}
             </p>
             <p className="text-xs text-[#666666]">Total Mints</p>
           </div>
           <div>
-            <p className="text-2xl font-bold text-[#FF6B6B]">
+            <p className="text-xl sm:text-2xl font-bold text-[#FF6B6B]">
               {Number(streakCount || 0)}
             </p>
             <p className="text-xs text-[#666666]">Current Streak</p>
           </div>
           <div>
-            <p className="text-2xl font-bold text-[#FF6B6B]">
+            <p className="text-xl sm:text-2xl font-bold text-[#FF6B6B]">
               {earnedBadges.length}
             </p>
             <p className="text-xs text-[#666666]">Badges Earned</p>
           </div>
           <div>
-            <p className="text-2xl font-bold text-[#FF6B6B]">
+            <p className="text-xl sm:text-2xl font-bold text-[#FF6B6B]">
               {pendingBadges.length}
             </p>
             <p className="text-xs text-[#666666]">Badges Pending</p>
@@ -452,9 +445,9 @@ export default function UserBadges() {
         </div>
       </div>
 
-      {/* Earned Badges Section */}
       <div>
-        <h3 className="text-xl font-bold text-green-600 mb-4">
+        {/* THE FIX: Responsive font size for the section title */}
+        <h3 className="text-lg sm:text-xl font-bold text-green-600 mb-4">
           🏆 Unlocked Achievements
         </h3>
         {earnedBadges.length > 0 ? (
@@ -475,9 +468,9 @@ export default function UserBadges() {
         )}
       </div>
 
-      {/* Pending Badges Section */}
       <div>
-        <h3 className="text-xl font-bold text-orange-600 mb-4">
+        {/* THE FIX: Responsive font size for the section title */}
+        <h3 className="text-lg sm:text-xl font-bold text-orange-600 mb-4">
           🎯 Your Next Challenges
         </h3>
         {pendingBadges.length > 0 ? (

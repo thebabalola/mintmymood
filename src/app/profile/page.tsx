@@ -26,7 +26,7 @@ import {
 } from "react-icons/fa";
 import { HiOutlineSparkles } from "react-icons/hi";
 
-// Reusable Components (no changes)
+// THE FIX: Added responsive padding and font sizes to the reusable ProfileSection
 const ProfileSection = ({
   title,
   icon,
@@ -36,14 +36,16 @@ const ProfileSection = ({
   icon: React.ReactNode;
   children: React.ReactNode;
 }) => (
-  <section className="bg-white/30 backdrop-blur-lg rounded-2xl p-6 shadow-lg border border-white/40">
+  <section className="bg-white/30 backdrop-blur-lg rounded-2xl p-4 sm:p-6 shadow-lg border border-white/40">
     <div className="flex items-center gap-3 mb-4">
       <div className="text-xl text-[#FF6B6B]">{icon}</div>
-      <h2 className="text-xl font-bold text-[#222222]">{title}</h2>
+      <h2 className="text-lg sm:text-xl font-bold text-[#222222]">{title}</h2>
     </div>
     {children}
   </section>
 );
+
+// UserNFTCard is already suitable for mobile, no changes needed
 const UserNFTCard = ({ nft }: { nft: NFTMetadata }) => {
   const mood = nft.attributes?.find(
     (attr) => attr.trait_type === "Mood"
@@ -227,7 +229,7 @@ export default function ProfilePage() {
     <div className="flex flex-col min-h-screen bg-[#F7F8FC]">
       <Header />
       <main className="flex-grow container mx-auto p-4 md:p-6">
-        <div className="w-full max-w-5xl mx-auto space-y-8">
+        <div className="w-full max-w-5xl mx-auto space-y-6 sm:space-y-8">
           {!isConnected && (
             <div className="text-center py-20 bg-white/50 rounded-2xl">
               <h2 className="text-2xl font-bold text-[#222222]">
@@ -241,10 +243,10 @@ export default function ProfilePage() {
           )}
 
           {isConnected && address && (
-            <div className="space-y-8">
-              {/* --- SECTION 1: Profile Summary --- */}
+            <div className="space-y-6 sm:space-y-8">
               <ProfileSection title="Your Profile" icon={<FaIdCard />}>
-                <p className="font-mono bg-gray-100 p-3 rounded-md text-center break-all">
+                {/* THE FIX: Responsive font size for address */}
+                <p className="font-mono bg-gray-100 p-3 rounded-md text-center break-all text-sm sm:text-base">
                   {address}
                 </p>
                 <p className="text-center text-sm text-[#666666] mt-4">
@@ -253,12 +255,10 @@ export default function ProfilePage() {
                 </p>
               </ProfileSection>
 
-              {/* --- SECTION 2: Achievements --- */}
               <ProfileSection title="Your Achievements" icon={<FaTrophy />}>
                 <UserBadges />
               </ProfileSection>
 
-              {/* --- SECTION 3: Minted Moods --- */}
               <ProfileSection title="Your Minted Moods" icon={<FaImages />}>
                 {loadingNfts && (
                   <div className="text-center p-4 flex items-center justify-center gap-2">
@@ -286,13 +286,11 @@ export default function ProfilePage() {
                 </div>
               </ProfileSection>
 
-              {/* --- THE FIX: SECTION 4 (MOVED) - AI Mood Review --- */}
               <ProfileSection
                 title="Your AI Mood Review"
                 icon={<HiOutlineSparkles />}
               >
                 {showReview && activeReview ? (
-                  // If a review is available, show the full card
                   <div>
                     <div className="flex justify-center mb-4">
                       <div className="bg-gray-200 p-1 rounded-full flex items-center">
@@ -318,14 +316,17 @@ export default function ProfilePage() {
                         </button>
                       </div>
                     </div>
+                    {/* THE FIX: Responsive padding and font size for review card */}
                     <div
                       id="review-card"
-                      className="p-6 bg-gradient-to-br from-[#FF6B6B]/80 via-[#FFD93D]/80 to-[#6BCB77]/80 rounded-xl text-white shadow-lg"
+                      className="p-4 sm:p-6 bg-gradient-to-br from-[#FF6B6B]/80 via-[#FFD93D]/80 to-[#6BCB77]/80 rounded-xl text-white shadow-lg"
                     >
-                      <h3 className="text-lg font-bold">
+                      <h3 className="text-base sm:text-lg font-bold">
                         Your {activeTab} Mood Analysis
                       </h3>
-                      <p className="mt-2">{activeReview.reviewText}</p>
+                      <p className="mt-2 text-sm sm:text-base">
+                        {activeReview.reviewText}
+                      </p>
                       <div className="mt-4 text-xs space-y-1 bg-black/10 p-3 rounded-md">
                         <p>
                           <strong>Mood Counts:</strong>{" "}
@@ -356,7 +357,6 @@ export default function ProfilePage() {
                     </button>
                   </div>
                 ) : (
-                  // THE FIX: If no review, show a placeholder
                   <div className="text-center p-6 bg-gray-100/70 rounded-lg">
                     <h3 className="font-semibold text-gray-800">
                       Your Mood Analysis Awaits!
