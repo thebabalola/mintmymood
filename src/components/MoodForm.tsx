@@ -1,13 +1,45 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { generateMoodImage } from "../lib/hugApi";
 import { uploadMoodToIPFS } from "../lib/ipfs";
 import { useWriteContract, useAccount, useReadContract } from "wagmi";
 import { MintMyMoodABI } from "../lib/MintMyMoodABI";
 import { MoodType } from "../types";
+import { FaImage, FaSpinner, FaTimes, FaMagic } from "react-icons/fa";
+
+// The UI-only InputField component
+const InputField = ({
+  label,
+  value,
+  onChange,
+  placeholder,
+  disabled,
+}: {
+  label: string;
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  placeholder: string;
+  disabled: boolean;
+}) => (
+  <div>
+    <label className="block text-sm font-medium text-[#666666] mb-1">
+      {label}
+    </label>
+    <input
+      type="text"
+      value={value}
+      onChange={onChange}
+      placeholder={placeholder}
+      disabled={disabled}
+      className="w-full bg-white/50 border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-[#FF6B6B] focus:border-[#FF6B6B] transition-colors"
+    />
+  </div>
+);
 
 export default function MoodForm() {
+  // --- YOUR ORIGINAL STATE AND HOOKS ---
   const [prompt, setPrompt] = useState("");
   const [mood, setMood] = useState("");
   const [title, setTitle] = useState("");
@@ -22,24 +54,30 @@ export default function MoodForm() {
   const { address, isConnected, isConnecting } = useAccount();
   const { writeContractAsync } = useWriteContract();
 
+  const [isClient, setIsClient] = useState(false);
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  // --- YOUR ORIGINAL useReadContract CALL (Corrected) ---
   const { data: moodTypes } = useReadContract({
     address: process.env.NEXT_PUBLIC_CONTRACT_ADDRESS as `0x${string}`,
     abi: MintMyMoodABI,
-    functionName: "getMoodTypes",
+    functionName: "getMoodTypes", // This has been corrected back to your original function name
   }) as { data: MoodType[] | undefined };
 
+  // --- YOUR ORIGINAL LOGIC FUNCTIONS ---
   const handleGenerateImage = async () => {
     if (!prompt || !mood || !title || !caption) {
-      setError("Please fill all fields");
+      setError("Please fill all fields to bring your mood to life!");
       return;
     }
     setLoading(true);
     setError("");
     setImageUrl("");
-    setIpfsUri("");
-    setLoadingMessage("Generating image...");
-
+    setLoadingMessage("AI is crafting your mood NFT...");
     try {
+      // Using your original prompt logic
       const blob = await generateMoodImage(`${mood} ${prompt}`);
       setImageBlob(blob);
       setImageUrl(URL.createObjectURL(blob));
@@ -47,7 +85,6 @@ export default function MoodForm() {
       const errorMessage =
         err instanceof Error ? err.message : "Unknown error occurred";
       setError(`Image generation failed: ${errorMessage}`);
-      console.error("MoodForm error:", err);
     } finally {
       setLoading(false);
       setLoadingMessage("");
@@ -55,24 +92,14 @@ export default function MoodForm() {
   };
 
   const handleApproveAndMint = async () => {
-    if (!imageBlob) {
-      setError("No image generated");
-      return;
-    }
-    if (!isConnected || !address) {
-      setError("Please connect wallet");
-      return;
-    }
-    if (isConnecting) {
-      setError("Wallet connection in progress, please wait");
+    if (!imageBlob || !isConnected || !address || isConnecting) {
+      setError("Cannot mint. Check image and wallet connection.");
       return;
     }
     setLoading(true);
     setError("");
-    setLoadingMessage("Uploading to IPFS...");
-
     try {
-      // Upload to IPFS
+      setLoadingMessage("Uploading to IPFS...");
       const metadataUri = await uploadMoodToIPFS(
         imageBlob,
         mood,
@@ -81,145 +108,196 @@ export default function MoodForm() {
         Date.now()
       );
       setIpfsUri(metadataUri);
-
-      setLoadingMessage("Minting NFT...");
-      // Mint NFT
+      setLoadingMessage("Confirming transaction...");
       await writeContractAsync({
         address: process.env.NEXT_PUBLIC_CONTRACT_ADDRESS as `0x${string}`,
         abi: MintMyMoodABI,
         functionName: "mintMood",
         args: [metadataUri, mood],
       });
-
       alert(`✅ Minted mood NFT: ${mood}`);
-      setPrompt("");
-      setMood("");
-      setTitle("");
-      setCaption("");
-      setImageBlob(null);
-      setImageUrl("");
-      setIpfsUri("");
+      handleRetryOrCloseModal();
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : "Unknown error occurred";
       setError(`Failed: ${errorMessage}`);
-      console.error("MoodForm error:", err);
     } finally {
       setLoading(false);
       setLoadingMessage("");
     }
   };
 
+  const handleRetryOrCloseModal = () => {
+    setImageUrl("");
+    setImageBlob(null);
+    setPrompt("");
+    setMood("");
+    setTitle("");
+    setCaption("");
+    setIpfsUri("");
+  };
+
   return (
-    <div className="w-full max-w-md p-4 bg-white shadow rounded space-y-3">
-      {loading && (
-        <div className="flex justify-center items-center">
-          <svg
-            className="animate-spin h-5 w-5 mr-3 text-blue-600"
-            viewBox="0 0 24 24"
-          >
-            <circle
-              className="opacity-25"
-              cx="12"
-              cy="12"
-              r="10"
-              stroke="currentColor"
-              strokeWidth="4"
-            />
-            <path
-              className="opacity-75"
-              fill="currentColor"
-              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-            />
-          </svg>
-          <p>{loadingMessage}</p>
+    <>
+      <div
+        id="mood-form"
+        className="w-full max-w-2xl mx-auto bg-white/30 backdrop-blur-lg rounded-2xl p-6 md:p-8 shadow-lg border border-white/40"
+      >
+        <div className="flex items-center gap-3 mb-6">
+          <FaImage className="text-2xl text-[#FF6B6B]" />
+          <h2 className="text-2xl font-bold text-[#222222]">
+            Mint Your Mood Today
+          </h2>
         </div>
-      )}
-      {error && <p className="text-red-600">{error}</p>}
-      <select
-        value={mood}
-        onChange={(e) => setMood(e.target.value)}
-        className="w-full border p-2 rounded"
-        aria-label="Select mood type"
-        disabled={loading}
-      >
-        <option value="">Select Mood Type</option>
-        {moodTypes?.map((mt, i) => (
-          <option key={i} value={mt.name}>
-            {mt.name} ({mt.category})
-          </option>
-        ))}
-      </select>
-      <input
-        type="text"
-        placeholder="Title (e.g., Happy Vibe)"
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-        className="w-full border p-2 rounded"
-        aria-label="Mood title"
-        disabled={loading}
-      />
-      <input
-        type="text"
-        placeholder="Caption (e.g., Feeling great!)"
-        value={caption}
-        onChange={(e) => setCaption(e.target.value)}
-        className="w-full border p-2 rounded"
-        aria-label="Mood caption"
-        disabled={loading}
-      />
-      <input
-        type="text"
-        placeholder="Image prompt (e.g., Astronaut riding a horse)"
-        value={prompt}
-        onChange={(e) => setPrompt(e.target.value)}
-        className="w-full border p-2 rounded"
-        aria-label="Image prompt"
-        disabled={loading}
-      />
-      <button
-        onClick={handleGenerateImage}
-        disabled={loading}
-        className="bg-blue-600 text-white w-full p-2 rounded hover:bg-blue-700 disabled:bg-gray-400"
-        aria-label="Generate image"
-      >
-        {loading ? "Processing..." : "Generate Image"}
-      </button>
-      {imageUrl && (
-        <div className="mt-4 space-y-3">
-          <img src={imageUrl} alt="Generated mood" className="w-full rounded" />
+        {error && (
+          <p className="mb-4 text-center text-red-600 bg-red-100 p-3 rounded-lg">
+            {error}
+          </p>
+        )}
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-[#666666] mb-1">
+              What kind of mood is this?
+            </label>
+            <select
+              value={mood}
+              onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+                setMood(e.target.value)
+              }
+              disabled={loading}
+              className="w-full bg-white/50 border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-[#FF6B6B] focus:border-[#FF6B6B] transition-colors"
+            >
+              <option value="">Select Mood Type...</option>
+              {moodTypes?.map((mt, i) => (
+                <option key={i} value={mt.name}>
+                  {mt.name} ({mt.category})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <InputField
+            label="Give it a Title"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="e.g., Electric Joy, Peaceful Slumber"
+            disabled={loading}
+          />
+          <InputField
+            label="Write a Short Caption"
+            value={caption}
+            onChange={(e) => setCaption(e.target.value)}
+            placeholder="e.g., On top of the world today!"
+            disabled={loading}
+          />
+
+          <div>
+            <label className="block text-sm font-medium text-[#666666] mb-1">
+              Describe Your Feeling for the AI
+            </label>
+            <div className="relative">
+              {!prompt && (
+                <div className="absolute top-3 left-3 w-full h-full pointer-events-none text-gray-400 text-sm leading-relaxed">
+                  <p className="mb-2">
+                    <strong className="text-gray-500">
+                      First, your journal entry:
+                    </strong>
+                    <br />
+                    "I felt so happy today after getting the promotion. it made
+                    me smile all day..."
+                  </p>
+                  <p>
+                    <strong className="text-gray-500">
+                      Then, describe the NFT visual:
+                    </strong>
+                    <br />
+                    "A cheerful emoji with bright sparkling eyes, tossing
+                    confetti in the air, wearing heart-shaped sunglasses. NFT
+                    art style, vibrant colors..."
+                  </p>
+                </div>
+              )}
+              <textarea
+                value={prompt}
+                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+                  setPrompt(e.target.value)
+                }
+                rows={5}
+                disabled={loading}
+                className="w-full bg-white/50 border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-[#FF6B6B] focus:border-[#FF6B6B] transition-colors"
+              />
+            </div>
+          </div>
+
           <button
             onClick={handleGenerateImage}
             disabled={loading}
-            className="bg-yellow-600 text-white w-full p-2 rounded hover:bg-yellow-700 disabled:bg-gray-400"
-            aria-label="Re-generate image"
+            className="w-full flex items-center justify-center gap-3 bg-[#FF6B6B] text-white font-bold text-lg px-6 py-4 rounded-xl shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 disabled:bg-gray-400 disabled:scale-100 disabled:shadow-none"
           >
-            Re-generate Image
-          </button>
-          <button
-            onClick={handleApproveAndMint}
-            disabled={loading || !isConnected || isConnecting}
-            className="bg-green-600 text-white w-full p-2 rounded hover:bg-green-700 disabled:bg-gray-400"
-            aria-label="Approve and mint"
-          >
-            Approve & Mint NFT
+            {loading ? <FaSpinner className="animate-spin" /> : <FaMagic />}
+            {loading ? loadingMessage : "Generate My Mood NFT"}
           </button>
         </div>
-      )}
-      {ipfsUri && (
-        <div className="mt-4">
-          <p>
-            IPFS URI:{" "}
-            <a
-              href={ipfsUri.replace("ipfs://", "https://ipfs.io/ipfs/")}
-              target="_blank"
-              className="underline"
+      </div>
+
+      {isClient &&
+        imageUrl &&
+        createPortal(
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-md"
+            onClick={handleRetryOrCloseModal}
+          >
+            <div
+              className="w-full max-w-lg rounded-2xl bg-[#F7F8FC] p-6 shadow-2xl relative"
+              onClick={(e) => e.stopPropagation()}
             >
-              {ipfsUri}
-            </a>
-          </p>
-        </div>
-      )}
-    </div>
+              <button
+                onClick={handleRetryOrCloseModal}
+                className="absolute top-4 right-4 text-[#666666] hover:text-[#222222]"
+              >
+                <FaTimes size={24} />
+              </button>
+              <h3 className="text-xl font-bold text-center text-[#222222] mb-4">
+                Your Mood NFT Preview
+              </h3>
+              <div className="bg-gray-200 rounded-lg p-2 mb-4">
+                <img
+                  src={imageUrl}
+                  alt="Generated mood preview"
+                  className="w-full rounded-md"
+                />
+              </div>
+              {error && (
+                <p className="mb-4 text-center text-red-600 bg-red-100 p-3 rounded-lg">
+                  {error}
+                </p>
+              )}
+              <div className="flex flex-col sm:flex-row gap-3">
+                <button
+                  onClick={handleRetryOrCloseModal}
+                  disabled={loading}
+                  className="w-full flex-1 bg-gray-200 text-[#222222] font-bold py-3 rounded-lg hover:bg-gray-300 transition-colors"
+                >
+                  Try Again
+                </button>
+                <button
+                  onClick={handleApproveAndMint}
+                  disabled={loading}
+                  className="w-full flex-1 flex items-center justify-center gap-2 bg-[#6BCB77] text-white font-bold py-3 rounded-lg hover:bg-green-600 transition-colors disabled:bg-gray-400"
+                >
+                  {loading &&
+                  (loadingMessage.includes("Uploading") ||
+                    loadingMessage.includes("Confirming")) ? (
+                    <FaSpinner className="animate-spin" />
+                  ) : (
+                    "Looks Good, Mint It!"
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
+    </>
   );
 }

@@ -1,5 +1,7 @@
 stable...
 
+import "./globals.css";
+
 --- Wagmi config.. ---
 
 // src/lib/wagmiConfig.ts

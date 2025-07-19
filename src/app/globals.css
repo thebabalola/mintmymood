@@ -1,26 +1,69 @@
+/* app/globals.css */
+
 @import "tailwindcss";
 
+/* 
+  STEP 1: Define your custom color palette using CSS variables.
+  We also define light and dark mode base colors.
+*/
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+  /* Your Custom Brand Palette */
+  --primary: #FF6B6B;
+  --secondary: #FFD93D;
+  --success: #6BCB77;
+  --bgLight: #F7F8FC;
+  --textDark: #222222;
+  --textMuted: #666666;
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  /* Base theme colors for light mode */
+  --background: var(--bgLight);
+  --foreground: var(--textDark);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
+    /* Define dark mode equivalents of your palette */
+    --primary: #ff7f7f;
+    /* A slightly softer red for dark backgrounds */
+    --secondary: #ffe169;
+    --success: #7cdb8a;
+    --bgLight: #1a1a1a;
+    /* A dark gray for cards/sections */
+    --textDark: #F7F8FC;
+    --textMuted: #999999;
+
+    /* Base theme colors for dark mode */
     --background: #0a0a0a;
+    /* A near-black main background */
     --foreground: #ededed;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* 
+  STEP 2: Register your variables with Tailwind's theme.
+  This is the magic that makes classes like `bg-primary` work.
+*/
+@theme {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+
+  /* Map our custom variables to Tailwind's color system */
+  --color-primary: var(--primary);
+  --color-secondary: var(--secondary);
+  --color-success: var(--success);
+  --color-bgLight: var(--bgLight);
+  /* For use on cards if needed */
+  --color-textDark: var(--textDark);
+  --color-textMuted: var(--textMuted);
+
+  /* Let's keep the font variables from the Next.js starter */
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
 }
+
+/* 
+  The default `body` styles are now handled by Tailwind classes on your
+  <html> or <body> tags in layout.tsx, using the --background and 
+  --foreground variables we defined above. We can remove the extra `body`
+  rules for a cleaner setup.
+*/
