@@ -1,0 +1,16 @@
+{
+  "name": "First Mint Badge",
+  "description": "Awarded to users for minting their very first mood NFT on MintMyMood.",
+  "image": "https://chocolate-electrical-wasp-990.mypinata.cloud/ipfs/bafybeihqxfb2xsl7265kaukmo44tfax6wu34w63ni7s65rw5mk3ujzujsi/0-First-Mint-Badge.png",
+  "external_url": "https://mintmymood.xyz",
+  "attributes": [
+    {
+      "trait_type": "Badge Type",
+      "value": "First-Time Minter"
+    },
+    {
+      "trait_type": "Rarity",
+      "value": "Common"
+    }
+  ]
+}

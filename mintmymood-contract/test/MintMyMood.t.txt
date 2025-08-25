@@ -1,0 +1,186 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+import {Test} from "forge-std/Test.sol";
+import {console} from "forge-std/console.sol";
+import {MintMyMood} from "../src/MintMyMood.sol";
+
+contract MintMyMoodTest is Test {
+    MintMyMood mintMyMood;
+    address admin = address(0x1);
+    address user1 = address(0x2);
+    address user2 = address(0x3);
+    MintMyMood.MoodType[] initialMoodTypes;
+    uint256 streakMilestone = 3;
+    uint256 moodMaestroMilestone = 25;
+
+    function setUp() public {
+        // Initialize 20 moods
+        initialMoodTypes.push(MintMyMood.MoodType("Happy", "Positive"));
+        initialMoodTypes.push(MintMyMood.MoodType("Grateful", "Positive"));
+        initialMoodTypes.push(MintMyMood.MoodType("Hopeful", "Positive"));
+        initialMoodTypes.push(MintMyMood.MoodType("Excited", "Positive"));
+        initialMoodTypes.push(MintMyMood.MoodType("Sad", "Negative"));
+        initialMoodTypes.push(MintMyMood.MoodType("Anxious", "Negative"));
+        initialMoodTypes.push(MintMyMood.MoodType("Frustrated", "Negative"));
+        initialMoodTypes.push(MintMyMood.MoodType("Lonely", "Negative"));
+        initialMoodTypes.push(MintMyMood.MoodType("Meh", "Neutral"));
+        initialMoodTypes.push(MintMyMood.MoodType("Bored", "Neutral"));
+        initialMoodTypes.push(MintMyMood.MoodType("Tired", "Neutral"));
+        initialMoodTypes.push(MintMyMood.MoodType("Chill", "Neutral"));
+        initialMoodTypes.push(MintMyMood.MoodType("Passionate", "HighIntensity"));
+        initialMoodTypes.push(MintMyMood.MoodType("Hyped", "HighIntensity"));
+        initialMoodTypes.push(MintMyMood.MoodType("Determined", "HighIntensity"));
+        initialMoodTypes.push(MintMyMood.MoodType("Dreamy", "Aesthetic"));
+        initialMoodTypes.push(MintMyMood.MoodType("Zen", "Aesthetic"));
+        initialMoodTypes.push(MintMyMood.MoodType("Delulu", "Niche"));
+        initialMoodTypes.push(MintMyMood.MoodType("Main character energy", "Niche"));
+        initialMoodTypes.push(MintMyMood.MoodType("Motivated", "Productivity"));
+
+        // Deploy contract
+        vm.prank(admin);
+        mintMyMood = new MintMyMood(admin, initialMoodTypes, streakMilestone, moodMaestroMilestone);
+    }
+
+    function testDeployment() public view {
+        assertEq(mintMyMood.owner(), admin, "Admin should be owner");
+        assertEq(mintMyMood.streakMilestone(), streakMilestone, "Streak milestone should be set");
+        assertEq(mintMyMood.moodMaestroMilestone(), moodMaestroMilestone, "MoodMaestro milestone should be set");
+        MintMyMood.MoodType[] memory moods = mintMyMood.getMoodTypes();
+        assertEq(moods.length, 20, "Should have 20 initial mood types");
+        assertEq(moods[0].name, "Happy", "First mood should be Happy");
+        assertEq(moods[0].category, "Positive", "First mood category should be Positive");
+    }
+
+    function testMintMood() public {
+        vm.startPrank(user1);
+        vm.warp(block.timestamp + 1 days); // Ensure mint is allowed
+        mintMyMood.mintMood("ipfs://test-uri", "Happy");
+        assertEq(mintMyMood.balanceOf(user1), 2, "User should have 2 NFTs (mood + First Mint badge)");
+        assertEq(mintMyMood.userMoodCounts(user1, "Happy"), 1, "Happy mood count should be 1");
+        assertEq(mintMyMood.userMintCount(user1), 1, "User mint count should be 1");
+        assertEq(mintMyMood.hasFirstMintBadge(user1), true, "User should have First Mint badge");
+        vm.stopPrank();
+    }
+
+    function testFirstMintBadge() public {
+        vm.startPrank(user1);
+        vm.warp(block.timestamp + 1 days);
+        mintMyMood.mintMood("ipfs://test-uri", "Happy");
+        assertEq(mintMyMood.hasFirstMintBadge(user1), true, "User should have First Mint badge");
+        assertEq(mintMyMood.moodMetadata(2), "First Mint Badge", "Token 2 should be First Mint badge");
+
+        // Try minting again after streak reset
+        vm.warp(block.timestamp + 3 days); // Break streak
+        mintMyMood.mintMood("ipfs://test-uri2", "Sad");
+        assertEq(mintMyMood.balanceOf(user1), 3, "User should have 3 NFTs (no second First Mint badge)");
+        vm.stopPrank();
+    }
+
+    function testStreakBadge() public {
+        vm.startPrank(user1);
+        vm.warp(block.timestamp + 1 days);
+        mintMyMood.mintMood("ipfs://test-uri1", "Happy"); // Day 1 - Token 1 (mood) + Token 2 (First Mint badge)
+        vm.warp(block.timestamp + 1 days);
+        mintMyMood.mintMood("ipfs://test-uri2", "Sad"); // Day 2 - Token 3 (mood)
+        vm.warp(block.timestamp + 1 days);
+        mintMyMood.mintMood("ipfs://test-uri3", "Excited"); // Day 3 - Token 4 (mood) + Token 5 (Streaker badge)
+        assertEq(mintMyMood.hasStreakBadge(user1), true, "User should have Streaker badge");
+        assertEq(mintMyMood.moodMetadata(5), "3-Day Streaker", "Token 5 should be Streaker badge");
+        assertEq(mintMyMood.balanceOf(user1), 5, "User should have 5 NFTs (3 moods + First Mint + Streaker)");
+        vm.stopPrank();
+    }
+
+function testMoodMaestroBadge() public {
+    vm.startPrank(user1);
+    
+    // Mint exactly 25 moods but break the streak after 2 days
+    for (uint256 i = 0; i < moodMaestroMilestone; i++) {
+        if (i < 2) {
+            vm.warp(block.timestamp + 1 days); // First 2 mints consecutive
+        } else if (i == 2) {
+            vm.warp(block.timestamp + 3 days); // Break streak on 3rd mint
+        }
+        // No time advancement for remaining mints
+        mintMyMood.mintMood(string.concat("ipfs://test-uri", uint2str(i)), "Happy");
+    }
+    
+    // Verify the badge was awarded
+    assertEq(mintMyMood.userMintCount(user1), moodMaestroMilestone, "User mint count should be 25");
+    assertEq(mintMyMood.hasMoodMaestroBadge(user1), true, "User should have MoodMaestro badge");
+    assertEq(mintMyMood.hasStreakBadge(user1), false, "User should NOT have Streaker badge");
+    
+    // The balance should be 27: 25 moods + 1 First Mint badge + 1 MoodMaestro badge
+    assertEq(mintMyMood.balanceOf(user1), 27, "User should have 27 NFTs");
+    
+    vm.stopPrank();
+}
+
+    function testMultipleBadges() public {
+        vm.startPrank(user1);
+        // Mint 25 moods over 3 days to hit both streak and MoodMaestro
+        for (uint256 i = 0; i < moodMaestroMilestone; i++) {
+            vm.warp(block.timestamp + (i < 3 ? 1 days : 0)); // First 3 mints on consecutive days
+            mintMyMood.mintMood(string.concat("ipfs://test-uri", uint2str(i)), "Happy");
+        }
+        assertEq(mintMyMood.hasFirstMintBadge(user1), true, "User should have First Mint badge");
+        assertEq(mintMyMood.hasStreakBadge(user1), true, "User should have Streaker badge");
+        assertEq(mintMyMood.hasMoodMaestroBadge(user1), true, "User should have MoodMaestro badge");
+        assertEq(mintMyMood.balanceOf(user1), 28, "User should have 28 NFTs (25 moods + 3 badges)");
+        vm.stopPrank();
+    }
+
+    function testInvalidMetadataURI() public {
+        vm.startPrank(user1);
+        vm.warp(block.timestamp + 1 days);
+        vm.expectRevert("Invalid metadata URI");
+        mintMyMood.mintMood("", "Happy");
+        vm.stopPrank();
+    }
+
+    function testInvalidMoodType() public {
+        vm.startPrank(user1);
+        vm.warp(block.timestamp + 1 days);
+        vm.expectRevert("Invalid mood type");
+        mintMyMood.mintMood("ipfs://test-uri", "InvalidMood");
+        vm.stopPrank();
+    }
+
+    function testAddMoodType() public {
+        vm.startPrank(admin);
+        mintMyMood.addMoodType("Feral", "Niche");
+        MintMyMood.MoodType[] memory moods = mintMyMood.getMoodTypes();
+        assertEq(moods.length, 21, "Should have 21 mood types");
+        assertEq(moods[20].name, "Feral", "New mood should be Feral");
+        assertEq(moods[20].category, "Niche", "New mood category should be Niche");
+        vm.stopPrank();
+    }
+
+    function testSoulboundBadges() public {
+        vm.startPrank(user1);
+        vm.warp(block.timestamp + 1 days);
+        mintMyMood.mintMood("ipfs://test-uri", "Happy"); // Mint + First Mint badge
+        vm.expectRevert("Badge is soulbound");
+        mintMyMood.transferFrom(user1, user2, 2); // Try transferring First Mint badge
+        vm.stopPrank();
+    }
+
+    // Helper function for string conversion
+    function uint2str(uint256 _i) internal pure returns (string memory) {
+        if (_i == 0) return "0";
+        uint256 j = _i;
+        uint256 length;
+        while (j != 0) {
+            length++;
+            j /= 10;
+        }
+        bytes memory bstr = new bytes(length);
+        uint256 k = length;
+        j = _i;
+        while (j != 0) {
+            bstr[--k] = bytes1(uint8(48 + j % 10));
+            j /= 10;
+        }
+        return string(bstr);
+    }
+}

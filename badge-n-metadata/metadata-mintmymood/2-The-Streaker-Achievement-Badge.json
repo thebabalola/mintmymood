@@ -1,0 +1,20 @@
+{
+  "name": "The Streaker Achievement Badge",
+  "description": "Awarded to users who achieve the streak milestone by minting daily for consecutive days.",
+  "image": "https://chocolate-electrical-wasp-990.mypinata.cloud/ipfs/bafybeihqxfb2xsl7265kaukmo44tfax6wu34w63ni7s65rw5mk3ujzujsi/2-The-Streaker-Achievement-Badge.png",
+  "external_url": "https://mintmymood.xyz",
+  "attributes": [
+    {
+      "trait_type": "Badge Type",
+      "value": "Streaker"
+    },
+    {
+      "trait_type": "Milestone",
+      "value": "Streak Milestone"
+    },
+    {
+      "trait_type": "Rarity",
+      "value": "Rare"
+    }
+  ]
+}

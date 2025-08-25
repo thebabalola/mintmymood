@@ -1,0 +1,262 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+
+contract MintMyMood is ERC721, Ownable {
+    
+    uint256 private _tokenIdCounter;
+    uint256 public streakMilestone;
+    uint256 public moodMaestroMilestone;
+    mapping(address => uint256) public streakCount;
+    mapping(address => uint256) public lastMintTimestamp;
+    mapping(address => bool) public hasFirstMintBadge; // New: Track First Mint badge
+    mapping(address => bool) public hasStreakBadge; // Track Streaker badge
+    mapping(address => bool) public hasMoodMaestroBadge; // Track MoodMaestro badge
+    mapping(address => uint256) public userMintCount; // Track non-badge mints
+    mapping(uint256 => string) public moodMetadata;
+    mapping(address => mapping(string => uint256)) public userMoodCounts; // Track mood frequency
+    struct MoodType {
+        string name; // e.g., "Happy"
+        string category; // e.g., "Positive"
+    }
+    MoodType[] public moodTypes; // Dynamic array of mood types
+    uint256 constant DAY = 1 days;
+
+    event Minted(address indexed user, uint256 tokenId, string metadataURI, string moodType);
+    event MoodTypeAdded(string moodType, string category);
+    event MilestoneBadgeAwarded(address indexed user, string badgeType);
+
+    constructor(address admin, MoodType[] memory initialMoodTypes, uint256 initialStreakMilestone, uint256 initialMoodMaestroMilestone)
+        ERC721("MintMyMood", "MOOD")
+        Ownable(admin)
+    {
+        streakMilestone = initialStreakMilestone; // e.g., 3
+        moodMaestroMilestone = initialMoodMaestroMilestone; // e.g., 25
+        for (uint256 i = 0; i < initialMoodTypes.length; i++) {
+            moodTypes.push(initialMoodTypes[i]);
+        }
+    }
+
+    function addMoodType(string memory newMoodType, string memory category) external onlyOwner {
+        require(bytes(newMoodType).length > 0, "Invalid mood type");
+        require(bytes(category).length > 0, "Invalid category");
+        for (uint256 i = 0; i < moodTypes.length; i++) {
+            require(keccak256(bytes(moodTypes[i].name)) != keccak256(bytes(newMoodType)), "Mood type exists");
+        }
+        moodTypes.push(MoodType(newMoodType, category));
+        emit MoodTypeAdded(newMoodType, category);
+    }
+
+    function updateStreakMilestone(uint256 newMilestone) external onlyOwner {
+        require(newMilestone > 0, "Invalid milestone");
+        streakMilestone = newMilestone;
+    }
+
+    function updateMoodMaestroMilestone(uint256 newMilestone) external onlyOwner {
+        require(newMilestone > 0, "Invalid milestone");
+        moodMaestroMilestone = newMilestone;
+    }
+
+    function mintMood(string memory metadataURI, string memory moodType) external {
+        require(bytes(metadataURI).length > 0, "Invalid metadata URI"); // Validate metadataURI
+        bool moodExists = false;
+        for (uint256 i = 0; i < moodTypes.length; i++) {
+            if (keccak256(bytes(moodTypes[i].name)) == keccak256(bytes(moodType))) {
+                moodExists = true;
+                break;
+            }
+        }
+        require(moodExists, "Invalid mood type");
+
+        if (block.timestamp >= lastMintTimestamp[msg.sender] + DAY) {
+            if (block.timestamp < lastMintTimestamp[msg.sender] + 2 * DAY) {
+                streakCount[msg.sender]++;
+            } else {
+                streakCount[msg.sender] = 1;
+            }
+            lastMintTimestamp[msg.sender] = block.timestamp;
+        }
+
+        _tokenIdCounter++;
+        uint256 tokenId = _tokenIdCounter;
+        moodMetadata[tokenId] = metadataURI;
+        userMoodCounts[msg.sender][moodType]++;
+        userMintCount[msg.sender]++; // Increment non-badge mint count
+        _safeMint(msg.sender, tokenId);
+        emit Minted(msg.sender, tokenId, metadataURI, moodType);
+
+        // Mint "First Mint" badge - only for the very first mint ever
+        if (userMintCount[msg.sender] == 1 && !hasFirstMintBadge[msg.sender]) {
+            _tokenIdCounter++;
+            uint256 badgeId = _tokenIdCounter;
+            moodMetadata[badgeId] = "First Mint Badge";
+            _safeMint(msg.sender, badgeId);
+            hasFirstMintBadge[msg.sender] = true; // Track First Mint badge
+            emit MilestoneBadgeAwarded(msg.sender, "First Mint");
+        }
+
+        // Mint Streaker badge
+        if (streakCount[msg.sender] == streakMilestone && !hasStreakBadge[msg.sender]) {
+            _tokenIdCounter++;
+            uint256 badgeId = _tokenIdCounter;
+            moodMetadata[badgeId] = string.concat(uint2str(streakMilestone), "-Day Streaker");
+            _safeMint(msg.sender, badgeId);
+            hasStreakBadge[msg.sender] = true; // Track Streaker badge
+            emit MilestoneBadgeAwarded(msg.sender, string.concat(uint2str(streakMilestone), "-Day Streaker"));
+        }
+
+        // Mint MoodMaestroMilestone badge
+        if (userMintCount[msg.sender] == moodMaestroMilestone && !hasMoodMaestroBadge[msg.sender]) {
+            _tokenIdCounter++;
+            uint256 badgeId = _tokenIdCounter;
+            moodMetadata[badgeId] = "MoodMaestroMilestone";
+            _safeMint(msg.sender, badgeId);
+            hasMoodMaestroBadge[msg.sender] = true; // Track MoodMaestro badge
+            emit MilestoneBadgeAwarded(msg.sender, "MoodMaestroMilestone");
+        }
+    }
+
+    function _update(address to, uint256 tokenId, address auth) internal override returns (address) {
+        address from = _ownerOf(tokenId);
+        
+        // Check if this is a badge token and prevent transfer (soulbound)
+        string memory streakBadge = string.concat(uint2str(streakMilestone), "-Day Streaker");
+        if (
+            keccak256(bytes(moodMetadata[tokenId])) == keccak256(bytes("First Mint Badge")) ||
+            keccak256(bytes(moodMetadata[tokenId])) == keccak256(bytes(streakBadge)) ||
+            keccak256(bytes(moodMetadata[tokenId])) == keccak256(bytes("MoodMaestroMilestone"))
+        ) {
+            require(from == address(0), "Badge is soulbound");
+        }
+        
+        return super._update(to, tokenId, auth);
+    }
+
+    function getMintCount(address user) public view returns (uint256) {
+        return userMintCount[user]; // O(1) lookup
+    }
+
+    function getMoodTypes() external view returns (MoodType[] memory) {
+        return moodTypes;
+    }
+
+    function getMoodMaestroMilestone() external view returns (uint256) {
+        return moodMaestroMilestone;
+    }
+
+    // UPDATED: Enhanced tokenURI function that handles both regular NFTs and badges
+    function tokenURI(uint256 tokenId) public view override returns (string memory) {
+        require(ownerOf(tokenId) != address(0), "ERC721Metadata: URI query for nonexistent token");
+        
+        string memory metadata = moodMetadata[tokenId];
+        
+        // Check if this is a badge token by comparing with known badge strings
+        string memory streakBadge = string.concat(uint2str(streakMilestone), "-Day Streaker");
+        
+        if (
+            keccak256(bytes(metadata)) == keccak256(bytes("First Mint Badge")) ||
+            keccak256(bytes(metadata)) == keccak256(bytes(streakBadge)) ||
+            keccak256(bytes(metadata)) == keccak256(bytes("MoodMaestroMilestone"))
+        ) {
+            // For badges, return a data URI with embedded JSON metadata
+            string memory badgeJson = string.concat(
+                '{"name":"',
+                metadata,
+                '","description":"Achievement badge for MintMyMood","image":"","attributes":[{"trait_type":"Badge","value":"',
+                metadata,
+                '"}]}'
+            );
+            return string.concat("data:application/json;base64,", base64Encode(bytes(badgeJson)));
+        }
+        
+        // For regular mood NFTs, return the IPFS URI as before
+        return metadata;
+    }
+
+    // NEW: Base64 encoding helper function
+    function base64Encode(bytes memory data) internal pure returns (string memory) {
+        if (data.length == 0) return "";
+        
+        string memory table = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+        string memory result = new string(4 * ((data.length + 2) / 3));
+        
+        assembly {
+            let tablePtr := add(table, 1)
+            let resultPtr := add(result, 32)
+            
+            for { let i := 0 } lt(i, mload(data)) { i := add(i, 3) } {
+                let input := shl(248, mload(add(add(data, 32), i)))
+                
+                let out := mload(add(tablePtr, and(shr(250, input), 0x3F)))
+                out := shl(8, out)
+                out := add(out, and(mload(add(tablePtr, and(shr(244, input), 0x3F))), 0xFF))
+                out := shl(8, out)
+                out := add(out, and(mload(add(tablePtr, and(shr(238, input), 0x3F))), 0xFF))
+                out := shl(8, out)
+                out := add(out, and(mload(add(tablePtr, and(shr(232, input), 0x3F))), 0xFF))
+                out := shl(224, out)
+                
+                mstore(resultPtr, out)
+                resultPtr := add(resultPtr, 4)
+            }
+            
+            switch mod(mload(data), 3)
+            case 1 { mstore(sub(resultPtr, 2), shl(240, 0x3d3d)) }
+            case 2 { mstore(sub(resultPtr, 1), shl(248, 0x3d)) }
+        }
+        
+        return result;
+    }
+
+    // NEW: Function to get all tokens owned by a specific address
+    function getTokensOwnedBy(address owner) external view returns (uint256[] memory) {
+        uint256 totalTokens = _tokenIdCounter;
+        uint256 ownedCount = 0;
+        
+        // First pass: count owned tokens
+        for (uint256 i = 1; i <= totalTokens; i++) {
+            if (_ownerOf(i) == owner) {
+                ownedCount++;
+            }
+        }
+        
+        // Second pass: collect owned token IDs
+        uint256[] memory ownedTokens = new uint256[](ownedCount);
+        uint256 currentIndex = 0;
+        
+        for (uint256 i = 1; i <= totalTokens; i++) {
+            if (_ownerOf(i) == owner) {
+                ownedTokens[currentIndex] = i;
+                currentIndex++;
+            }
+        }
+        
+        return ownedTokens;
+    }
+
+    // NEW: Total supply function
+    function totalSupply() public view returns (uint256) {
+        return _tokenIdCounter;
+    }
+
+    // EXISTING: uint2str helper function (unchanged)
+    function uint2str(uint256 _i) internal pure returns (string memory) {
+        if (_i == 0) return "0";
+        uint256 j = _i;
+        uint256 length;
+        while (j != 0) {
+            length++;
+            j /= 10;
+        }
+        bytes memory bstr = new bytes(length);
+        uint256 k = length;
+        j = _i;
+        while (j != 0) {
+            bstr[--k] = bytes1(uint8(48 + j % 10));
+            j /= 10;
+        }
+        return string(bstr);
+    }
+}

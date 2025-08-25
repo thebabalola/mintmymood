@@ -1,0 +1,20 @@
+{
+  "name": "Mood Maestro Badge",
+  "description": "Awarded to users who mint a large number of mood NFTs, proving their dedication to self-expression.",
+  "image": "https://chocolate-electrical-wasp-990.mypinata.cloud/ipfs/bafybeihqxfb2xsl7265kaukmo44tfax6wu34w63ni7s65rw5mk3ujzujsi/1-Mood-Maestro-Badge.png",
+  "external_url": "https://mintmymood.xyz",
+  "attributes": [
+    {
+      "trait_type": "Badge Type",
+      "value": "Mood Maestro"
+    },
+    {
+      "trait_type": "Milestone",
+      "value": "Mood Maestro Milestone"
+    },
+    {
+      "trait_type": "Rarity",
+      "value": "Legendary"
+    }
+  ]
+}
