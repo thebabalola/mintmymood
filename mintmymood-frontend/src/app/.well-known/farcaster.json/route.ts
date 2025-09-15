@@ -42,5 +42,10 @@ export async function GET() {
       // use only while testing
       noindex: true,
     }),
+    baseBuilder: {
+      allowedAddresses: [
+        '0x9A780EEbde134AA7c58A0b86C2Ce7A3dC66b5F5b',
+      ],
+    },
   });
 }
