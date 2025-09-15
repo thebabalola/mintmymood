@@ -33,7 +33,7 @@ export async function GET() {
       homeUrl: URL,
       webhookUrl: `${URL}/api/webhook`,
       primaryCategory: 'social',
-      tags: [],
+      tags: ['mood', 'nft', 'social', 'emotions', 'minting'],
       heroImageUrl: 'https://mintmymood.vercel.app/og.png',
       tagline: 'Mint instantly',
       ogTitle: 'MintMyMood',
