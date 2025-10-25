@@ -3,12 +3,14 @@
 import { useAccount, useConnectors, useConnect } from "wagmi";
 import { WalletModal, WalletConnection } from "@/contexts/wallet";
 import { useEffect, useState } from "react";
+import { useMiniKit } from '@coinbase/onchainkit/minikit';
 
 export default function ConnectButton() {
   const { address, isConnected } = useAccount();
   const { connect } = useConnect();
   const connectors = useConnectors();
   const [isInFarcasterFrame, setIsInFarcasterFrame] = useState(false);
+  const { isFrameReady } = useMiniKit();
 
   // Check if we're in a Farcaster Frame context
   useEffect(() => {
@@ -29,7 +31,7 @@ export default function ConnectButton() {
       setIsInFarcasterFrame(inFrame);
       
       // Auto-connect to Farcaster if in Farcaster Frame and not already connected
-      if (inFrame && !isConnected) {
+      if (inFrame && !isConnected && isFrameReady) {
         const farcasterConnector = connectors.find(
           (connector) => 
             connector.id === "farcaster" || 
@@ -44,11 +46,18 @@ export default function ConnectButton() {
         }
       }
     }
-  }, [connectors, connect, isConnected]);
+  }, [connectors, connect, isConnected, isFrameReady]);
 
-  if (!address) {
+  // If connected, show wallet connection component
+  if (isConnected && address) {
+    return <WalletConnection />;
+  }
+
+  // If in Farcaster Frame, use your custom WalletModal (preserves Farcaster UX)
+  if (isInFarcasterFrame) {
     return <WalletModal />;
   }
 
-  return <WalletConnection />;
+  // If not in Farcaster Frame, use AppKit button (qualifies for Builder Rewards)
+  return <appkit-button />;
 }
