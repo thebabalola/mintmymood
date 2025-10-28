@@ -34,7 +34,7 @@ MintMyMood is a revolutionary Web3 application that allows users to mint their d
 1. **Clone the repository**
    ```bash
    git clone https://github.com/thebabalola/mintmymood.git
-   cd mintmymood/frontends-mym
+   cd mintmymood/frontend
    ```
 
 2. **Install dependencies**
@@ -139,8 +139,8 @@ src/
 
 1. **Deploy to Base Sepolia**
    ```bash
-   cd contracts
-   forge script Deploy --rpc-url base-sepolia --broadcast --verify
+   cd smart-contracts
+   forge script script/Deploy.s.sol --rpc-url base_sepolia --broadcast --verify
    ```
 
 2. **Update environment variables** with the deployed contract address

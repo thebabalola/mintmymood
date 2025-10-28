@@ -12,19 +12,19 @@ This repository contains the complete MintMyMood project with the following comp
 
 ```
 mintmymoods/
-├── mintmymood-contract/     # Smart contract (Solidity + Foundry)
-├── mintmymood-frontend/     # Next.js frontend application
-└── badge-n-metadata/        # Badge images and metadata
+├── smart-contracts/        # Smart contract (Solidity + Foundry)
+├── frontend/               # Next.js frontend application
+└── badge-n-metadata/       # Badge images and metadata
 ```
 
-### 🏗️ Smart Contract (`mintmymood-contract/`)
+### 🏗️ Smart Contract (`smart-contracts/`)
 
 - **Network**: Base Sepolia testnet
 - **Contract Address**: `0x4868cdcb72decb774d3154d72e572dc0094d8e41`
 - **Framework**: Foundry
 - **Features**: ERC-721 NFTs with mood-based minting
 
-### 🎨 Frontend (`mintmymood-frontend/`)
+### 🎨 Frontend (`frontend/`)
 
 - **Framework**: Next.js 15 with App Router
 - **Styling**: Tailwind CSS 4
@@ -51,7 +51,7 @@ mintmymoods/
 
 1. **Navigate to frontend directory**
    ```bash
-   cd mintmymood-frontend/frontends-mym
+   cd frontend
    ```
 
 2. **Install dependencies**
@@ -83,7 +83,7 @@ mintmymoods/
 
 1. **Navigate to contract directory**
    ```bash
-   cd mintmymood-contract
+   cd smart-contracts
    ```
 
 2. **Install Foundry dependencies**
