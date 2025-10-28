@@ -1,7 +1,10 @@
 "use client";
 
 import { useAccount, useDisconnect, useSwitchChain } from "wagmi";
-import { baseSepolia } from "wagmi/chains";
+// Base Sepolia (Testnet) - Commented out for mainnet deployment
+// import { baseSepolia } from "wagmi/chains";
+// Base Mainnet
+import { base } from "wagmi/chains";
 import { Icon } from "@iconify/react/dist/iconify.js";
 import { Wallet, AlertTriangle, LogOut } from "lucide-react";
 import { useState } from "react";
@@ -19,7 +22,10 @@ const WalletConnection = () => {
   const [showChainSelector, setShowChainSelector] = useState(false);
 
   // Check if user is on wrong chain
-  const isWrongChain = account.isConnected && account.chain?.id !== baseSepolia.id;
+  // Base Sepolia (Testnet) - Commented out for mainnet deployment
+  // const isWrongChain = account.isConnected && account.chain?.id !== baseSepolia.id;
+  // Base Mainnet
+  const isWrongChain = account.isConnected && account.chain?.id !== base.id;
 
   const handleCopy = () => {
     if (account.address) {
@@ -29,7 +35,10 @@ const WalletConnection = () => {
 
   const handleSwitchChain = async () => {
     try {
-      await switchChain({ chainId: baseSepolia.id });
+      // Base Sepolia (Testnet) - Commented out for mainnet deployment
+      // await switchChain({ chainId: baseSepolia.id });
+      // Base Mainnet
+      await switchChain({ chainId: base.id });
       setShowChainSelector(false);
     } catch (error) {
       console.error("Failed to switch chain:", error);
@@ -40,11 +49,18 @@ const WalletConnection = () => {
             method: "wallet_addEthereumChain",
             params: [
               {
-                chainId: `0x${baseSepolia.id.toString(16)}`,
-                chainName: baseSepolia.name,
-                rpcUrls: [baseSepolia.rpcUrls.default.http[0]],
-                blockExplorerUrls: [baseSepolia.blockExplorers?.default.url],
-                nativeCurrency: baseSepolia.nativeCurrency,
+                // Base Sepolia (Testnet) - Commented out for mainnet deployment
+                // chainId: `0x${baseSepolia.id.toString(16)}`,
+                // chainName: baseSepolia.name,
+                // rpcUrls: [baseSepolia.rpcUrls.default.http[0]],
+                // blockExplorerUrls: [baseSepolia.blockExplorers?.default.url],
+                // nativeCurrency: baseSepolia.nativeCurrency,
+                // Base Mainnet
+                chainId: `0x${base.id.toString(16)}`,
+                chainName: base.name,
+                rpcUrls: [base.rpcUrls.default.http[0]],
+                blockExplorerUrls: [base.blockExplorers?.default.url],
+                nativeCurrency: base.nativeCurrency,
               },
             ],
           });
@@ -93,7 +109,10 @@ const WalletConnection = () => {
                   className="flex items-center gap-2 rounded bg-yellow-600 px-3 py-1 text-sm text-white hover:bg-yellow-700 w-full justify-center"
                 >
                   <Icon icon="mdi:ethereum" className="w-4 h-4" />
-                  Switch to {baseSepolia.name}
+                  {/* Base Sepolia (Testnet) - Commented out for mainnet deployment */}
+                  {/* Switch to {baseSepolia.name} */}
+                  {/* Base Mainnet */}
+                  Switch to {base.name}
                 </button>
               ) : (
                 <div className="flex flex-col gap-2">
@@ -108,7 +127,10 @@ const WalletConnection = () => {
                     {isSwitching ? (
                       <Icon icon="codex:loader" className="w-4 h-4 animate-spin" />
                     ) : null}
-                    {baseSepolia.name}
+                    {/* Base Sepolia (Testnet) - Commented out for mainnet deployment */}
+                    {/* {baseSepolia.name} */}
+                    {/* Base Mainnet */}
+                    {base.name}
                   </button>
                   <button
                     onClick={() => setShowChainSelector(false)}

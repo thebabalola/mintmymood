@@ -3,7 +3,10 @@
 import { wagmiAdapter, projectId } from '@/lib/appkitConfig'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { createAppKit } from '@reown/appkit/react'
-import { baseSepolia } from '@reown/appkit/networks'
+// Base Sepolia (Testnet) - Commented out for mainnet deployment
+// import { baseSepolia } from '@reown/appkit/networks'
+// Base Mainnet
+import { base } from '@reown/appkit/networks'
 import React, { type ReactNode } from 'react'
 import { cookieToInitialState, WagmiProvider, type Config } from 'wagmi'
 
@@ -26,8 +29,12 @@ const metadata = {
 const modal = createAppKit({
   adapters: [wagmiAdapter],
   projectId,
-  networks: [baseSepolia],
-  defaultNetwork: baseSepolia,
+  // Base Sepolia (Testnet) - Commented out for mainnet deployment
+  // networks: [baseSepolia],
+  // defaultNetwork: baseSepolia,
+  // Base Mainnet
+  networks: [base],
+  defaultNetwork: base,
   metadata: metadata,
   features: {
     analytics: true // Optional - defaults to your Cloud configuration

@@ -12,7 +12,13 @@ remappings = [
 ]
 
 [rpc_endpoints]
-base_sepolia = "${BASE_SEPOLIA_RPC_URL}"
+# Base Sepolia (Testnet) - Commented out for mainnet deployment
+# base_sepolia = "${BASE_SEPOLIA_RPC_URL}"
+# Base Mainnet
+base = "${BASE_MAINNET_RPC_URL}"
 
 [etherscan]
-base_sepolia = { key = "${BASESCAN_API_KEY}", url = "https://api-sepolia.basescan.org/api" }
+# Base Sepolia (Testnet) - Commented out for mainnet deployment
+# base_sepolia = { key = "${BASESCAN_API_KEY}", url = "https://api-sepolia.basescan.org/api" }
+# Base Mainnet
+base = { key = "${BASESCAN_API_KEY}", url = "https://api.basescan.org/api" }
