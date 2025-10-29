@@ -124,6 +124,7 @@ mintmymoods/
 - **Live App**: [mintmymood.vercel.app](https://mintmymood.vercel.app)
 - **Farcaster Mini App**: [Farcaster Mini App](https://farcaster.xyz/miniapps/oXpRXDCzmUMJ/mintmymood)
 - **Smart Contract**: [Base Sepolia Explorer](https://sepolia.basescan.org/address/0x4868cdcb72decb774d3154d72e572dc0094d8e41)
+- **Smart Contract Mainnet**: [Base Scan Explorer](https://basescan.org/address/0x.....)
 - **GitHub**: [github.com/thebabalola/mintmymood](https://github.com/thebabalola/mintmymood)
 
 ## 📄 License
