@@ -1,9 +1,9 @@
 // src/lib/wagmiConfig.ts
 import { createConfig, http } from "wagmi";
-// Base Sepolia (Testnet) - Commented out for mainnet deployment
-// import { baseSepolia } from "wagmi/chains";
-// Base Mainnet
-import { base } from "wagmi/chains";
+// Re-enabled: Base Sepolia (Testnet)
+import { baseSepolia } from "wagmi/chains";
+// Disabled: Base Mainnet
+// import { base } from "wagmi/chains";
 import {
   injected,
   walletConnect,
@@ -21,9 +21,9 @@ const getWalletConnectConnector = () => {
       projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || "",
       metadata: {
         name: "MintMyMood",
-        description: "Mint your mood as an NFT on Base Mainnet",
-        url: "https://mintmymood.vercel.app", // Updated to production URL
-        icons: ["https://mintmymood.vercel.app/mym-logo.png"], // Add icon
+        description: "Mint your mood as an NFT on Base Sepolia",
+        url: "https://mintmymood.vercel.app",
+        icons: ["https://mintmymood.vercel.app/mym-logo.png"],
       },
     });
   }
@@ -31,15 +31,12 @@ const getWalletConnectConnector = () => {
 };
 
 export const config = createConfig({
-  // Base Sepolia (Testnet) - Commented out for mainnet deployment
-  // chains: [baseSepolia],
-  // Base Mainnet
-  chains: [base],
+  // Use Base Sepolia (Testnet)
+  chains: [baseSepolia],
   transports: {
-    // Base Sepolia (Testnet) - Commented out for mainnet deployment
-    // [baseSepolia.id]: http("https://sepolia.base.org"),
-    // Base Mainnet
-    [base.id]: http("https://mainnet.base.org"),
+    [baseSepolia.id]: http("https://sepolia.base.org"),
+    // Disabled: Base Mainnet
+    // [base.id]: http("https://mainnet.base.org"),
   },
   connectors: [
     // Farcaster Mini App connector as the primary option
